@@ -15,7 +15,8 @@ This script take .csv files as input and transform them into a new .csv file. Th
   - Remove columns that are not needed
   - Rename in a more readable way the columns
   - Reorganize the columns order in a more logical way
-  - Add a column with the total effective population for each city
+  - Remove the rows with missing values
+  - Add a column with the Population Totale for each city
   - Add a column with the proportion of each sex on the total effective (3 decimals)
   - Add a column with the proportion of each sex on each age group : 15-24y, 25-64y, 65+y (3 decimals)
 
@@ -25,7 +26,6 @@ This script take .csv files as input and transform them into a new .csv file. Th
 ``` {r printInput} 
 # Load data from the input directory : /rawData/demographies/
 # First file to be loaded : Sexe2010.csv
-getwd()
 fileName <- "../../rawData/demographies/Sexe2010.csv"
 data <- read.csv(fileName, sep = ";",header = TRUE, skip = 2) # skip 2 first lines that are not needed
 head(data)
@@ -38,9 +38,10 @@ The columns names are not very readable. Some even got the same name. We will re
 
 ``` {r renameRows}
 # Rename the rows
-colnames(data) <- c("Code Commune", "Nom Commune",
-                    "nb H 15-24 ans", "nb H total", "nb H 25-64 ans", "nb H 65+ ans", 
-                    "nb F total", "nb F 15-24 ans", "nb F 25-64 ans", "nb F 65+ ans")
+colNames <- c("Code Commune", "Nom Commune",
+              "Nb H 15-24 ans", "Nb H total", "Nb H 25-64 ans", "Nb H 65+ ans", 
+              "Nb F total", "Nb F 15-24 ans", "Nb F 25-64 ans", "Nb F 65+ ans")
+colnames(data) <- colNames
 head(data)
 ``` 
 
@@ -49,22 +50,60 @@ head(data)
 The columns are not in a logical order. We will reorganize them in a more logical way.
 
 ``` {r reorganizeColumns}
-# Reorganize the columns
-data <- data[, c(1, 2, 4, 7, 3, 5, 6, 8, 9, 10)]
+# Reorganize the columns from the names of the columns
+newOrder <- c("Code Commune", "Nom Commune",
+              "Nb H total", "Nb F total", 
+              "Nb H 15-24 ans", "Nb H 25-64 ans", "Nb H 65+ ans",
+              "Nb F 15-24 ans", "Nb F 25-64 ans", "Nb F 65+ ans")
+data <- data[, newOrder]
 head(data)
 
 ```
+## Remove rows with missing values
 
-## Add a column with the total effective population for each city
+Some rows have missing values. We will remove these rows and save the id and name of the cities with missing values in an other data frame.
 
-We will add a column with the total effective population for each city. We will then use it to calculate the proportion of each sex.
+``` {r removeMissingValues}
+# Print the number of missing values ("N/A - résultat non disponible") in the columns 3 to 10 (the columns with numeric data)
+sum(data$`Nb H total` == "N/A - résultat non disponible")
+
+# Save the id and name of the cities with missing values
+missingValuesCities <- data[data$`Nb H total` == "N/A - résultat non disponible", c("Code Commune", "Nom Commune")]
+missingValuesCities
+
+# Remove the rows with the value "N/A - résultat non disponible" in the columns 3 to 10
+data <- data[!data$`Nb H total` == "N/A - résultat non disponible",]
+
+# Print again the number of NA values, should be 0
+sum(data$`Nb H total` == "N/A - résultat non disponible")
+```
+
+
+## Convert the columns to numeric
+
+The columns with numeric data are currently in character format. We will convert them to numeric.
+
+``` {r convertToNumeric}
+# Convert the columns to numeric except the first two columns
+data[,3:10] <- sapply(data[,3:10], as.numeric)
+```  
+
+
+## Add the sex repartition for each city
+
+We will first add a column with the Population Totale for each city. We then use it to calculate the proportion of each sex.
 
 ``` {r addTotalPopulation}
-# Add a column with the total effective population for each city
+# Add a column with the total population for each city
+data$`Population Totale` <- data$`Nb H total` + data$`Nb F total`
+
+# Add a column with the proportion of men
+data$`Proportion H` <- round(data$`Nb H total` / data$`Population Totale`, 3)
+
+# Add a column with the proportion of women
+data$`Proportion F` <- round(data$`Nb F total` / data$`Population Totale`, 3)
+
 head(data)
-
-
-
 ```  
 
 

@@ -363,9 +363,10 @@ the suffix “_transformed” added to it. The goal of the script is to
 transform the data into a format that is easier to work with. The script
 will perform the following transformations:</p>
 <ul>
-<li>Remove rows that are not needed</li>
 <li>Remove columns that are not needed</li>
 <li>Rename in a more readable way the columns</li>
+<li>Reorganize the columns order in a more logical way</li>
+<li>Remove the rows with missing values</li>
 <li>Add a column with the total effective population for each city</li>
 <li>Add a column with the proportion of each sex on the total effective
 (3 decimals)</li>
@@ -377,72 +378,209 @@ will perform the following transformations:</p>
 <h2>Input</h2>
 <pre class="r"><code># Load data from the input directory : /rawData/demographies/
 # First file to be loaded : Sexe2010.csv
-getwd()</code></pre>
-<pre><code>## [1] &quot;C:/Users/etien/Documents/helyn-data/ETLScripts/demographies&quot;</code></pre>
-<pre class="r"><code>fileName &lt;- &quot;../../rawData/demographies/Sexe2010.csv&quot;
-data &lt;- read.csv(fileName, header = TRUE, sep = &quot;;&quot;)
-head(data,4)</code></pre>
-<pre><code>##                    Insee...Statistiques.locales                       X
-## 1 Référentiel géographique : France par commune                        
-## 2                                          Code                 Libellé
-## 3                                         01001 L&#39;Abergement-Clémenciat
-## 4                                         01002   L&#39;Abergement-de-Varey
-##                                                 X.1
-## 1                                                  
-## 2 Nb d&#39;hommes de 15 à 64 ans par tranche d&#39;âge 2010
-## 3                                                35
-## 4                                                 7
-##                                                 X.2
-## 1                                                  
-## 2 Nb d&#39;hommes de 15 à 64 ans par tranche d&#39;âge 2010
-## 3                                               245
-## 4                                                72
-##                                                 X.3
-## 1                                                  
-## 2 Nb d&#39;hommes de 15 à 64 ans par tranche d&#39;âge 2010
-## 3                                               163
-## 4                                                51
-##                                                 X.4
-## 1                                                  
-## 2 Nb d&#39;hommes de 15 à 64 ans par tranche d&#39;âge 2010
-## 3                                                47
-## 4                                                14
-##                                                  X.5
-## 1                                                   
-## 2 Nb de femmes de 15 à 64 ans par tranche d&#39;âge 2010
-## 3                                                231
-## 4                                                 69
-##                                                  X.6
-## 1                                                   
-## 2 Nb de femmes de 15 à 64 ans par tranche d&#39;âge 2010
-## 3                                                 32
-## 4                                                 10
-##                                                  X.7
-## 1                                                   
-## 2 Nb de femmes de 15 à 64 ans par tranche d&#39;âge 2010
-## 3                                                148
-## 4                                                 45
-##                                                  X.8
-## 1                                                   
-## 2 Nb de femmes de 15 à 64 ans par tranche d&#39;âge 2010
-## 3                                                 51
-## 4                                                 13</code></pre>
+fileName &lt;- &quot;../../rawData/demographies/Sexe2010.csv&quot;
+data &lt;- read.csv(fileName, sep = &quot;;&quot;,header = TRUE, skip = 2) # skip 2 first lines that are not needed
+head(data)</code></pre>
+<pre><code>##    Code                 Libellé
+## 1 01001 L&#39;Abergement-Clémenciat
+## 2 01002   L&#39;Abergement-de-Varey
+## 3 01004       Ambérieu-en-Bugey
+## 4 01005     Ambérieux-en-Dombes
+## 5 01006                 Ambléon
+## 6 01007                Ambronay
+##   Nb.d.hommes.de.15.à.64.ans.par.tranche.d.âge.2010
+## 1                                                35
+## 2                                                 7
+## 3                                               993
+## 4                                               106
+## 5                                                 8
+## 6                                               124
+##   Nb.d.hommes.de.15.à.64.ans.par.tranche.d.âge.2010.1
+## 1                                                 245
+## 2                                                  72
+## 3                                                4523
+## 4                                                 550
+## 5                                                  44
+## 6                                                 780
+##   Nb.d.hommes.de.15.à.64.ans.par.tranche.d.âge.2010.2
+## 1                                                 163
+## 2                                                  51
+## 3                                                2852
+## 4                                                 347
+## 5                                                  26
+## 6                                                 501
+##   Nb.d.hommes.de.15.à.64.ans.par.tranche.d.âge.2010.3
+## 1                                                  47
+## 2                                                  14
+## 3                                                 679
+## 4                                                  97
+## 5                                                   9
+## 6                                                 154
+##   Nb.de.femmes.de.15.à.64.ans.par.tranche.d.âge.2010
+## 1                                                231
+## 2                                                 69
+## 3                                               4328
+## 4                                                530
+## 5                                                 37
+## 6                                                748
+##   Nb.de.femmes.de.15.à.64.ans.par.tranche.d.âge.2010.1
+## 1                                                   32
+## 2                                                   10
+## 3                                                  901
+## 4                                                  101
+## 5                                                    3
+## 6                                                  109
+##   Nb.de.femmes.de.15.à.64.ans.par.tranche.d.âge.2010.2
+## 1                                                  148
+## 2                                                   45
+## 3                                                 2716
+## 4                                                  338
+## 5                                                   23
+## 6                                                  494
+##   Nb.de.femmes.de.15.à.64.ans.par.tranche.d.âge.2010.3
+## 1                                                   51
+## 2                                                   13
+## 3                                                  710
+## 4                                                   91
+## 5                                                   11
+## 6                                                  144</code></pre>
 </div>
-<div id="transformation" class="section level2">
-<h2>Transformation</h2>
-<pre class="r"><code># Remove rows 1 and 2 that are not needed
-data &lt;- data[-c(1,2),]
-head(data,4)</code></pre>
-<pre><code>##   Insee...Statistiques.locales                       X X.1  X.2  X.3 X.4  X.5
-## 3                        01001 L&#39;Abergement-Clémenciat  35  245  163  47  231
-## 4                        01002   L&#39;Abergement-de-Varey   7   72   51  14   69
-## 5                        01004       Ambérieu-en-Bugey 993 4523 2852 679 4328
-## 6                        01005     Ambérieux-en-Dombes 106  550  347  97  530
-##   X.6  X.7 X.8
-## 3  32  148  51
-## 4  10   45  13
-## 5 901 2716 710
-## 6 101  338  91</code></pre>
+<div id="rename-columns" class="section level2">
+<h2>Rename columns</h2>
+<p>The columns names are not very readable. Some even got the same name.
+We will rename them to make them more understandable.</p>
+<pre class="r"><code># Rename the rows
+colNames &lt;- c(&quot;Code Commune&quot;, &quot;Nom Commune&quot;,
+              &quot;nb H 15-24 ans&quot;, &quot;nb H total&quot;, &quot;nb H 25-64 ans&quot;, &quot;nb H 65+ ans&quot;, 
+              &quot;nb F total&quot;, &quot;nb F 15-24 ans&quot;, &quot;nb F 25-64 ans&quot;, &quot;nb F 65+ ans&quot;)
+colnames(data) &lt;- colNames
+head(data)</code></pre>
+<pre><code>##   Code Commune             Nom Commune nb H 15-24 ans nb H total nb H 25-64 ans
+## 1        01001 L&#39;Abergement-Clémenciat             35        245            163
+## 2        01002   L&#39;Abergement-de-Varey              7         72             51
+## 3        01004       Ambérieu-en-Bugey            993       4523           2852
+## 4        01005     Ambérieux-en-Dombes            106        550            347
+## 5        01006                 Ambléon              8         44             26
+## 6        01007                Ambronay            124        780            501
+##   nb H 65+ ans nb F total nb F 15-24 ans nb F 25-64 ans nb F 65+ ans
+## 1           47        231             32            148           51
+## 2           14         69             10             45           13
+## 3          679       4328            901           2716          710
+## 4           97        530            101            338           91
+## 5            9         37              3             23           11
+## 6          154        748            109            494          144</code></pre>
+</div>
+<div id="reorganize-clomumns-order" class="section level2">
+<h2>Reorganize clomumns order</h2>
+<p>The columns are not in a logical order. We will reorganize them in a
+more logical way.</p>
+<pre class="r"><code># Reorganize the columns from the names of the columns
+newOrder &lt;- c(&quot;Code Commune&quot;, &quot;Nom Commune&quot;,
+              &quot;nb H total&quot;, &quot;nb F total&quot;, 
+              &quot;nb H 15-24 ans&quot;, &quot;nb H 25-64 ans&quot;, &quot;nb H 65+ ans&quot;,
+              &quot;nb F 15-24 ans&quot;, &quot;nb F 25-64 ans&quot;, &quot;nb F 65+ ans&quot;)
+data &lt;- data[, newOrder]
+head(data)</code></pre>
+<pre><code>##   Code Commune             Nom Commune nb H total nb F total nb H 15-24 ans
+## 1        01001 L&#39;Abergement-Clémenciat        245        231             35
+## 2        01002   L&#39;Abergement-de-Varey         72         69              7
+## 3        01004       Ambérieu-en-Bugey       4523       4328            993
+## 4        01005     Ambérieux-en-Dombes        550        530            106
+## 5        01006                 Ambléon         44         37              8
+## 6        01007                Ambronay        780        748            124
+##   nb H 25-64 ans nb H 65+ ans nb F 15-24 ans nb F 25-64 ans nb F 65+ ans
+## 1            163           47             32            148           51
+## 2             51           14             10             45           13
+## 3           2852          679            901           2716          710
+## 4            347           97            101            338           91
+## 5             26            9              3             23           11
+## 6            501          154            109            494          144</code></pre>
+</div>
+<div id="remove-rows-with-missing-values" class="section level2">
+<h2>Remove rows with missing values</h2>
+<p>Some rows have missing values. We will remove these rows and save the
+id and name of the cities with missing values in an other data
+frame.</p>
+<pre class="r"><code># Print the number of missing values (&quot;N/A - résultat non disponible&quot;) in the columns 3 to 10 (the columns with numeric data)
+sum(data$`nb H total` == &quot;N/A - résultat non disponible&quot;)</code></pre>
+<pre><code>## [1] 24</code></pre>
+<pre class="r"><code># Save the id and name of the cities with missing values
+missingValuesCities &lt;- data[data$`nb H total` == &quot;N/A - résultat non disponible&quot;, c(&quot;Code Commune&quot;, &quot;Nom Commune&quot;)]
+missingValuesCities</code></pre>
+<pre><code>##       Code Commune       Nom Commune
+## 4865         14666       Sannerville
+## 20118        55138             Culey
+## 23102        60694 Les Hauts-Talican
+## 29329        76095           Bihorel
+## 29811        76601      Saint-Lucien
+## 32701        85165             L&#39;Oie
+## 32740        85212   Sainte-Florence
+## 34919        97601             Acoua
+## 34920        97602        Bandraboua
+## 34921        97603          Bandrele
+## 34922        97604            Bouéni
+## 34923        97605           Chiconi
+## 34924        97606         Chirongui
+## 34925        97607           Dembeni
+## 34926        97608          Dzaoudzi
+## 34927        97609         Kani-Kéli
+## 34928        97610           Koungou
+## 34929        97611         Mamoudzou
+## 34930        97612         Mtsamboro
+## 34931        97613     M&#39;Tsangamouji
+## 34932        97614          Ouangani
+## 34933        97615          Pamandzi
+## 34934        97616              Sada
+## 34935        97617          Tsingoni</code></pre>
+<pre class="r"><code># Remove the rows with the value &quot;N/A - résultat non disponible&quot; in the columns 3 to 10
+data &lt;- data[!data$`nb H total` == &quot;N/A - résultat non disponible&quot;,]
+
+# Print again the number of NA values, should be 0
+sum(data$`nb H total` == &quot;N/A - résultat non disponible&quot;)</code></pre>
+<pre><code>## [1] 0</code></pre>
+</div>
+<div id="convert-the-columns-to-numeric" class="section level2">
+<h2>Convert the columns to numeric</h2>
+<p>The columns with numeric data are currently in character format. We
+will convert them to numeric.</p>
+<pre class="r"><code># Convert the columns to numeric except the first two columns
+data[,3:10] &lt;- sapply(data[,3:10], as.numeric)</code></pre>
+</div>
+<div id="add-the-sex-repartition-for-each-city" class="section level2">
+<h2>Add the sex repartition for each city</h2>
+<p>We will first add a column with the total effective population for
+each city. We then use it to calculate the proportion of each sex.</p>
+<pre class="r"><code># Add a column with the total effective population for each city
+data$`Total effective population` &lt;- data$`nb H total` + data$`nb F total`
+
+# Add a column with the proportion of men
+data$`Total Proportion of men` &lt;- round(data$`nb H total` / data$`Total effective population`, 3)
+
+# Add a column with the proportion of women
+data$`Total Proportion of women` &lt;- round(data$`nb F total` / data$`Total effective population`, 3)
+
+head(data)</code></pre>
+<pre><code>##   Code Commune             Nom Commune nb H total nb F total nb H 15-24 ans
+## 1        01001 L&#39;Abergement-Clémenciat        245        231             35
+## 2        01002   L&#39;Abergement-de-Varey         72         69              7
+## 3        01004       Ambérieu-en-Bugey       4523       4328            993
+## 4        01005     Ambérieux-en-Dombes        550        530            106
+## 5        01006                 Ambléon         44         37              8
+## 6        01007                Ambronay        780        748            124
+##   nb H 25-64 ans nb H 65+ ans nb F 15-24 ans nb F 25-64 ans nb F 65+ ans
+## 1            163           47             32            148           51
+## 2             51           14             10             45           13
+## 3           2852          679            901           2716          710
+## 4            347           97            101            338           91
+## 5             26            9              3             23           11
+## 6            501          154            109            494          144
+##   Total effective population Total Proportion of men Total Proportion of women
+## 1                        476                   0.515                     0.485
+## 2                        141                   0.511                     0.489
+## 3                       8851                   0.511                     0.489
+## 4                       1080                   0.509                     0.491
+## 5                         81                   0.543                     0.457
+## 6                       1528                   0.510                     0.490</code></pre>
 </div>
 
 
