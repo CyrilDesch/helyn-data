@@ -1,0 +1,78 @@
+---
+title: "TransformationAge"
+output: html_document
+date: "2024-11-21"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Transforamtion Age
+
+This script take .csv files as input and transform them into a new .csv file. The new file will have the same name as the input file with the suffix "_transformed" added to it. The goal of the script is to transform the data  into a format that is easier to work with. The script will perform the following transformations:
+
+  - Remove columns that are not needed
+  - Rename in a more readable way the columns
+  - Reorganize the columns order in a more logical way
+  - Add a column with the total effective population for each city
+  - Add a column with the proportion of each sex on the total effective (3 decimals)
+  - Add a column with the proportion of each sex on each age group : 15-24y, 25-64y, 65+y (3 decimals)
+
+
+## Input
+
+``` {r printInput} 
+# Load data from the input directory : /rawData/demographies/
+# First file to be loaded : Sexe2010.csv
+getwd()
+fileName <- "../../rawData/demographies/Sexe2010.csv"
+data <- read.csv(fileName, sep = ";",header = TRUE, skip = 2) # skip 2 first lines that are not needed
+head(data)
+
+```
+
+## Rename columns
+
+The columns names are not very readable. Some even got the same name. We will rename them to make them more understandable.
+
+``` {r renameRows}
+# Rename the rows
+colnames(data) <- c("Code Commune", "Nom Commune",
+                    "nb H 15-24 ans", "nb H total", "nb H 25-64 ans", "nb H 65+ ans", 
+                    "nb F total", "nb F 15-24 ans", "nb F 25-64 ans", "nb F 65+ ans")
+head(data)
+``` 
+
+## Reorganize clomumns order
+
+The columns are not in a logical order. We will reorganize them in a more logical way.
+
+``` {r reorganizeColumns}
+# Reorganize the columns
+data <- data[, c(1, 2, 4, 7, 3, 5, 6, 8, 9, 10)]
+head(data)
+
+```
+
+## Add a column with the total effective population for each city
+
+We will add a column with the total effective population for each city. We will then use it to calculate the proportion of each sex.
+
+``` {r addTotalPopulation}
+# Add a column with the total effective population for each city
+head(data)
+
+
+
+```  
+
+
+
+
+
+
+
+
+
+
