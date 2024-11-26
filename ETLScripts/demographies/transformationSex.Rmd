@@ -1,5 +1,5 @@
 ---
-title: "TransformationAge"
+title: "TransformationSex"
 output: html_document
 date: "2024-11-21"
 ---
@@ -8,7 +8,7 @@ date: "2024-11-21"
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Transforamtion Age
+## Transformation Sex
 
 This script take .csv files as input and transform them into a new .csv file. The new file will have the same name as the input file with the suffix "_transformed" added to it. The goal of the script is to transform the data  into a format that is easier to work with. The script will perform the following transformations:
 
@@ -16,7 +16,7 @@ This script take .csv files as input and transform them into a new .csv file. Th
   - Rename in a more readable way the columns
   - Reorganize the columns order in a more logical way
   - Remove the rows with missing values
-  - Add a column with the Population Totale for each city
+  - Add a column with the total population for each city
   - Add a column with the proportion of each sex on the total effective (3 decimals)
   - Add a column with the proportion of each sex on each age group : 15-24y, 25-64y, 65+y (3 decimals)
 
@@ -105,7 +105,23 @@ data$`Proportion F` <- round(data$`Nb F total` / data$`Population Totale`, 3)
 
 head(data)
 ```  
+## Reorganize the columns order with the new columns
 
+We will reorganize the columns order with the new columns we added.
+
+``` {r reorganizeColumnsWithNewColumns}
+
+# Reorganize the columns from the names of the columns
+newOrder <- c("Code Commune", "Nom Commune",
+              "Population Totale", "Proportion H", "Proportion F",
+              "Nb H total", "Nb F total", 
+              "Nb H 15-24 ans", "Nb H 25-64 ans", "Nb H 65+ ans",
+              "Nb F 15-24 ans", "Nb F 25-64 ans", "Nb F 65+ ans")
+
+data <- data[, newOrder]
+head(data)
+
+```
 
 
 
