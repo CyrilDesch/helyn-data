@@ -16,7 +16,7 @@ This script take .csv files as input and transform them into a new .csv file. Th
   - Rename in a more readable way the columns
   - Reorganize the columns order in a more logical way
   - Remove the rows with missing values
-  - Add a column with the Population Totale for each city
+  - Add a column with the total population for each city
   - Add a column with the proportion of each sex on the total effective (3 decimals)
   - Add a column with the proportion of each sex on each age group : 15-24y, 25-64y, 65+y (3 decimals)
 
