@@ -95,6 +95,16 @@ sum(data$`Nb 25-64` == "N/A - résultat non disponible")
 sum(data$`Prop 25-64` == "N/A - division par 0")
 ```
 
+## Remove doubled rows
+
+Some rows are doubled. We will remove them.
+
+``` {r removeDoubledRows}
+
+# Remove the doubled rows
+data <- data[!duplicated(data$`Code Commune`),]
+
+```
 
 ## Convert the columns to numeric
 
