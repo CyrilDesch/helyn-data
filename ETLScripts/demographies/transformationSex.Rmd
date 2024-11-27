@@ -26,8 +26,10 @@ This script take .csv files as input and transform them into a new .csv file. Th
 ``` {r printInput} 
 # Load data from the input directory : /rawData/demographies/
 # First file to be loaded : Sexe2010.csv
-fileName <- "../../rawData/demographies/Sexe2010.csv"
-data <- read.csv(fileName, sep = ";",header = TRUE, skip = 2) # skip 2 first lines that are not needed
+path <- "../../rawData/demographies/"
+fileName <- "Sexe2010.csv"
+inputFile <- paste0(path, fileName)
+data <- read.csv(inputFile, sep = ";",header = TRUE, skip = 2) # skip 2 first lines that are not needed
 head(data)
 
 ```
@@ -79,6 +81,19 @@ sum(data$`Nb H total` == "N/A - résultat non disponible")
 ```
 
 
+## Remove the doubled rows
+
+If there are doubled rows, we will remove them.
+
+``` {r removeDoubledRows}
+
+# Remove the doubled rows
+data <- data[!duplicated(data),]
+
+
+```
+
+
 ## Convert the columns to numeric
 
 The columns with numeric data are currently in character format. We will convert them to numeric.
@@ -107,7 +122,17 @@ head(data)
 ```  
 
 
+## Export data
 
+We will export the transformed data to a new .csv file. The new file will have the same name as the input file but stored in the right folder.
+
+``` {r exportData}
+# Export the data to a new .csv file
+path <- "../../cleanData/demographies/"
+outputFile <- paste0(path, fileName)
+write.table(data, outputFile, row.names = FALSE, sep = ";", col.names = TRUE, quote = FALSE)
+
+```
 
 
 
