@@ -62,7 +62,7 @@ data2021 <- data2021 %>%
   select(
     Code_Insee,
     Libelle,
-    Nb_non_scolarises_2010,            # Nombre total (attention, appartient à 2010)
+    Nb_non_scolarises_2021,            # Nombre total (attention, appartient à 2010)
     Part_non_peu_diplomes_2021,        # Part non ou peu diplômés
     Part_bepc_brevet_2021,             # Part BEPC/Brevet
     Part_CAP_BEP_2021,                 # Part CAP/BEP
