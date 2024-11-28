@@ -13,7 +13,7 @@ data2021 <- read_excel("/home/hugo/helyn-data/rawData/demographies/Education2021
 colnames(data2010) <- c(
   "Code_Insee",
   "Libelle",
-  "Nb_non_scolarises_15ans_plus_2010",
+  "Nb_non_scolarises_2010",
   "Part_non_peu_diplomes_2010",
   "Part_bepc_brevet_2010",
   "Part_cap_bep_2010",
@@ -28,7 +28,7 @@ colnames(data2021) <- c(
   "Code_Insee",
   "Libelle",
   "Part_BAC5_plus_2021",
-  "Nb_non_scolarises_2010",
+  "Nb_non_scolarises_2021",
   "Part_BAC2_2021",
   "Part_BAC3_4_2021",
   "Part_non_peu_diplomes_2021",
@@ -47,7 +47,7 @@ data2010 <- data2010 %>%
   select(
     Code_Insee,
     Libelle,
-    Nb_non_scolarises_15ans_plus_2010, # Nombre total
+    Nb_non_scolarises_2010,            # Nombre total
     Part_non_peu_diplomes_2010,        # Part non ou peu diplômés
     Part_bepc_brevet_2010,             # Part BEPC/Brevet
     Part_cap_bep_2010,                 # Part CAP/BEP
@@ -62,7 +62,7 @@ data2021 <- data2021 %>%
   select(
     Code_Insee,
     Libelle,
-    Nb_non_scolarises_2021,            # Nombre total (attention, appartient à 2010)
+    Nb_non_scolarises_2021,            # Nombre total
     Part_non_peu_diplomes_2021,        # Part non ou peu diplômés
     Part_bepc_brevet_2021,             # Part BEPC/Brevet
     Part_CAP_BEP_2021,                 # Part CAP/BEP
@@ -83,8 +83,8 @@ library(dplyr)
 # Nettoyer les données pour 2010
 data2010_clean <- data2010 %>%
   filter(
-    !is.na(Code_Insee), # Supprimer les lignes où le Code Insee est NA
-    Nb_non_scolarises_15ans_plus_2010 > 0, # Vérifier que le nombre de non-scolarisés est positif
+    !is.na(Code_Insee),                                                  # Supprimer les lignes où le Code Insee est NA
+    Nb_non_scolarises_2010 > 0,                                          # Vérifier que le nombre de non-scolarisés est positif
     Part_non_peu_diplomes_2010 >= 0 & Part_non_peu_diplomes_2010 <= 100, # Vérifier les pourcentages
     Part_bepc_brevet_2010 >= 0 & Part_bepc_brevet_2010 <= 100,
     Part_cap_bep_2010 >= 0 & Part_cap_bep_2010 <= 100,
@@ -98,8 +98,9 @@ data2010_clean <- data2010_clean %>%
 # Nettoyer les données pour 2021
 data2021_clean <- data2021 %>%
   filter(
-    !is.na(Code_Insee), # Supprimer les lignes où le Code Insee est NA
-    Part_BAC5_plus_2021 >= 0 & Part_BAC5_plus_2021 <= 100, # Vérifier les pourcentages
+    !is.na(Code_Insee),                                                  # Supprimer les lignes où le Code Insee est NA
+    Nb_non_scolarises_2021 > 0,                                          # Vérifier que le nombre de non-scolarisés est positif
+    Part_BAC5_plus_2021 >= 0 & Part_BAC5_plus_2021 <= 100,               # Vérifier les pourcentages
     Part_BAC2_2021 >= 0 & Part_BAC2_2021 <= 100,
     Part_BAC3_4_2021 >= 0 & Part_BAC3_4_2021 <= 100,
     Part_non_peu_diplomes_2021 >= 0 & Part_non_peu_diplomes_2021 <= 100,
@@ -117,7 +118,63 @@ str(data2010_clean)
 str(data2021_clean)
 ```
 
-```{r save-cleaned-data, echo=TRUE}
+```{r merge-clean-data, echo=TRUE}
+# Ajouter une colonne pour l'année à chaque dataset
+data2010_clean <- data2010_clean %>%
+  mutate(
+    TrancheAnnee = "[2010-2012]",
+    Part_BAC2 = NA,       # Colonnes inexistantes pour 2010
+    Part_BAC3_4 = NA,
+    Part_BAC5_plus = NA
+  )
+
+data2021_clean <- data2021_clean %>%
+  mutate(TrancheAnnee = "[2018-2024]")
+
+# Harmoniser les colonnes pour fusion
+data2010_clean <- data2010_clean %>%
+  select(
+    TrancheAnnee,
+    Code_Insee,
+    Libelle,
+    Nb_non_scolarises = Nb_non_scolarises_2010,
+    Part_non_peu_diplomes = Part_non_peu_diplomes_2010,
+    Part_bepc_brevet = Part_bepc_brevet_2010,
+    Part_cap_bep = Part_cap_bep_2010,
+    Part_bac = Part_bac_2010,
+    Part_BAC2,
+    Part_BAC3_4,
+    Part_BAC5_plus
+  )
+
+data2021_clean <- data2021_clean %>%
+  select(
+    TrancheAnnee,
+    Code_Insee,
+    Libelle,
+    Nb_non_scolarises = Nb_non_scolarises_2021,
+    Part_non_peu_diplomes = Part_non_peu_diplomes_2021,
+    Part_bepc_brevet = Part_bepc_brevet_2021,
+    Part_cap_bep = Part_CAP_BEP_2021,
+    Part_bac = Part_BAC_2021,
+    Part_BAC2 = Part_BAC2_2021,
+    Part_BAC3_4 = Part_BAC3_4_2021,
+    Part_BAC5_plus = Part_BAC5_plus_2021
+  )
+
+# Fusionner les deux datasets
+merged_data <- bind_rows(data2010_clean, data2021_clean)
+
+# Réorganiser les colonnes pour une meilleure lisibilité
+merged_data <- merged_data %>%
+  arrange(Code_Insee, TrancheAnnee)
+
+# Vérifier la structure et un aperçu des données fusionnées
+str(merged_data)
+head(merged_data)
+```
+
+```{r save-merged-data, echo=TRUE}
 # Chemin du dossier de destination
 output_dir <- "/home/hugo/helyn-data/cleanData/demographies"
 
@@ -126,14 +183,9 @@ if (!dir.exists(output_dir)) {
   dir.create(output_dir, recursive = TRUE)
 }
 
-# Visualiser les datas
-head(data2010_clean)
-head(data2021_clean)
-
-# Sauvegarder les données nettoyées en CSV
-write.csv(data2010_clean, file.path(output_dir, "Education2010_clean.csv"), row.names = FALSE)
-write.csv(data2021_clean, file.path(output_dir, "Education2021_clean.csv"), row.names = FALSE)
+# Sauvegarder le fichier fusionné
+write.csv(merged_data, file.path(output_dir, "Education_clean.csv"), row.names = FALSE)
 
 # Message de confirmation
-cat("Les fichiers nettoyés ont été enregistrés dans : ", output_dir, "\n")
+cat("Le fichier fusionné a été enregistré dans : ", output_dir, "\n")
 ```
