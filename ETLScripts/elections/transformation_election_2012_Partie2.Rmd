@@ -27,11 +27,12 @@ candidats_parti <- c(
 )
 
 # Charger les résultats des élections
-file_path <- "../../rawData/elections/resultats-burvot-t1-presidentielle_2012_modifie.xlsx"
+file_path <- "../../rawData/elections/resultats-burvot-t1-presidentielle_2012_modified.xlsx"
 df <- read_excel(file_path)
 
+
 # Creation d'une colonne Voix qui ajoute les voix de chaque candidat colonne E + .. colonne N
-df$Voix <- rowSums(df[, 6:15], na.rm = TRUE)
+df$Voix <- rowSums(df[, 7:16], na.rm = TRUE)
 
 # Créer une fonction pour calculer les totaux par parti et ajouter les colonnes dans df
 calculate_totals <- function(df, candidats_parti) {
@@ -59,6 +60,9 @@ calculate_totals <- function(df, candidats_parti) {
 # Appliquer la fonction pour calculer les totaux
 df <- calculate_totals(df, candidats_parti)
 
+# Ajouter la colonne nonExp
+df$nonExp <- df$Votants - df$Voix
+
 # Supprimer les colonnes spécifiques
 colonnes_a_supprimer <- c(
   "VoixDUPONT_AIGNAN", "VoixLE_PEN", "VoixARTHAUD", "VoixPOUTOU", 
@@ -66,14 +70,24 @@ colonnes_a_supprimer <- c(
   "VoixBAYROU", "VoixJOLY", "% Voix/VotantDUPONT_AIGNAN", 
   "% Voix/VotantLE_PEN", "% Voix/VotantARTHAUD", "% Voix/VotantPOUTOU", 
   "% Voix/VotantCHEMINADE", "% Voix/VotantMELENCHON", "% Voix/VotantHOLLANDE", 
-  "% Voix/VotantSARKOZY", "% Voix/VotantBAYROU", "% Voix/VotantJOLY"
+  "% Voix/VotantSARKOZY", "% Voix/VotantBAYROU", "% Voix/VotantJOLY",
+  "Voix"
 )
 
 
 df <- df %>% select(-all_of(colonnes_a_supprimer))
 
-# Ajouter la colonne nonExp
-df$nonExp <- df$Votants - df$Voix
+# Créer la colonne Code
+df <- df %>% mutate(Code = paste0(`Code du département`, `Code de la commune`, `Code du b.vote`))
+
+# Enlever les colonnes Code département, Code de la commune et Code du b.vote
+df <- df %>% select(-`Code du département`, -`Code de la commune`, -`Code du b.vote`, -`Code de la circonscription`)
+
+# Ajouter une colonne avec l'année de l'élection (2022)
+df <- df %>% mutate(Annee = 2012)
+
+# mettre nonExp juste après Votants
+df <- df %>% select(Annee, Code, `Libellé de la commune`, `Votants`, nonExp, everything())
 
 # Sauvegarder le fichier avec les totaux par parti
 write.xlsx(df, "../../cleanData/elections/resultats-burvot-t1-presidentielle_2012.xlsx")

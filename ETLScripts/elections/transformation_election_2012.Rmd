@@ -27,6 +27,9 @@ df_grouped <- df %>%
     # Ajouter la colonne Votants mais en prenant la valeur du premier enregistrement
     Votants = first(Votants),
     
+    # Afficher la colonne Libellé de la commune
+    `Libellé de la commune` = first(`Libellé de la commune`),
+    
     VoixDUPONT_AIGNAN = sum(Voix[Nom == "DUPONT-AIGNAN"]),
     VoixLE_PEN = sum(Voix[Nom == "LE PEN"]),
     VoixARTHAUD = sum(Voix[Nom == "ARTHAUD"]),
@@ -52,7 +55,7 @@ df_grouped <- df %>%
   )
 
 # Sauvegarder le fichier modifié
-write.xlsx(df_grouped, "../../rawData/elections/resultats-burvot-t1-presidentielle_2012_modifie.xlsx")
+write.xlsx(df_grouped, "../../rawData/elections/resultats-burvot-t1-presidentielle_2012_modified.xlsx")
 
 # Succes message
 print("Les résultats ont été agrégés par lieu de vote et le fichier a été sauvegardé.")

@@ -13,13 +13,11 @@ library(readxl)
 library(openxlsx)
 library(dplyr)
 
-# Charger les données des candidats
-candidats_file <- "../../rawData/elections/candidats_presidentielle_2017.xlsx"
-candidats_df <- read_excel(candidats_file)
-
 # Charger les résultats des élections
 file_path <- "../../rawData/elections/resultats-burvot-t1-presidentielle_2017.xlsx"
 df <- read_excel(file_path)
+
+
 
 # Calculer les colonnes "% Voix/Votant"
 df$`% Voix/Votant1` <- (df$Voix1 / df$Votants) * 100
@@ -83,8 +81,33 @@ new_order <- c(
 # Appliquer l'ordre des colonnes
 df <- df[, new_order]
 
-# Sauvegarder le fichier avec les totaux par parti
-write.xlsx(df, "../../cleanData/elections/resultats-burvot-t1-presidentielle_2017.xlsx")
+# Créer la colonne Code
+df <- df %>% mutate(Code = paste0(`Code du département`, `Code de la commune`, `Code du b.vote`))
+
+# Enlever les colonnes Code département, Code de la commune et Code du b.vote
+df <- df %>% select(-`Code du département`, -`Code de la commune`, -`Code du b.vote`)
+
+# Enlever les colonnes Libellé du département, Code de la circonscription, Libellé de la circonscription, Inscrits, Abstentions, % Abs/Ins, % Vot/Ins
+df <- df %>% select(-`Libellé du département`, -`Code de la circonscription`, -`Libellé de la circonscription`, -`Inscrits`, -`Abstentions`, -`% Abs/Ins`, -`% Vot/Ins`)
+
+# Ajouter une colonne nonExp (somme des Blancs + Nuls)
+df <- df %>% mutate(nonExp = Blancs + Nuls)
+
+# Enlever Blancs, % Blancs/Ins, % Blancs/Vot, Nuls, % Nuls/Ins, % Nuls/Vot
+df <- df %>% select(-`Blancs`, -`% Blancs/Ins`, -`% Blancs/Vot`, -`Nuls`, -`% Nuls/Ins`, -`% Nuls/Vot`)
+
+# Ajouter une colonne avec l'année de l'élection (2022)
+df <- df %>% mutate(Annee = 2017)
+
+# mettre nonExp juste après Votants
+df <- df %>% select(Annee, Code, `Libellé de la commune`, `Votants`, nonExp, everything())
+
+# Sauvegarder le fichier avec les totaux par parti et exporte le en UTF-8
+write.xlsx(df, "../../cleanData/elections/resultats-burvot-t1-presidentielle_2017.xlsx", encoding = "UTF-8")
+
+#print message succes
+print("Le fichier a été transformé avec succès !")
+
 
 
 ```
