@@ -27,7 +27,8 @@ This script take .csv files as input and transform them into a new .csv file. Th
 # Load data from the input directory : /rawData/demographies/
 # First file to be loaded : AgePopulation_2010.csv
 path <- "../../rawData/demographies/"
-fileName <- "AgePopulation_2010.csv"
+year <- 2015
+fileName <- paste0("AgePopulation_", year, ".csv")
 inputFile <- paste0(path, fileName)
 
 data <- read.csv(inputFile, sep = ";",header = TRUE, skip = 2) # skip 2 first lines that are not needed
@@ -57,7 +58,11 @@ mapping <- list(
   "Part.des.pers..âgées.de.65.ans.ou.." = "Prop 65+",
   "Part.des.pers..âgées.de.75.ans.ou.." = "Prop 75+",
   "Taux.de.natalité.annuel.moyen.1999" = "Taux Nat",
-  "Taux.de.mortalité.annuel.moyen.1999" = "Taux Mort"
+  "Taux.de.mortalité.annuel.moyen.1999" = "Taux Mort",
+  "Taux.de.natalité.annuel.moyen.2010" = "Taux Nat",
+  "Taux.de.mortalité.annuel.moyen.2010" = "Taux Mort",
+  "Taux.de.natalité.annuel.moyen.2015" = "Taux Nat",
+  "Taux.de.mortalité.annuel.moyen.2015" = "Taux Mort"
 )
 
 # Rename columns
@@ -80,7 +85,7 @@ renameColumns <- function(colnames, mapping, year) {
 }
 
 # Apply the renaming function
-newColnames <- renameColumns(names(data), mapping, 2010)
+newColnames <- renameColumns(names(data), mapping, year)
 colnames(data) <- newColnames
 
 # Check the result
@@ -92,9 +97,9 @@ head(data)
 Some columns are not needed. We will remove them.
 
 ``` {r removeColumns}
-# Remove the columns that are not needed
+# Remove the columns that are not needed based on the column names
 removeColumns <- function(data){
-  data <- data[, -c(3,4,8,11,15)]
+  data <- data[, !grepl("75|80|-15", colnames(data))]
   return(data)
 }
 data <- removeColumns(data)
@@ -120,7 +125,7 @@ reorganizeColumns <- function(data, newOrder, year){
   return(data)
 }
 
-data <- reorganizeColumns(data, newOrder, 2010)
+data <- reorganizeColumns(data, newOrder, year)
 head(data)
 
 ```
@@ -187,29 +192,6 @@ data <- convertToNumeric(data)
 head(data)
 ```  
 
-## Add the year of the data to the column names
-
-We will add the year of the data to the column names to merge the files later.
-
-``` {r addYearToColumns}
-
-addYearToColumns <- function(data, year){
-  colNames <- colnames(data)
-  
-  #Retirer le code commune et le nom commune des colonnes à renommer
-  colNames <- colNames[-c(1,2)]
-  colNames <- paste0(colNames, " ", year)
-  #Ajouter le code commune et le nom commune au début de la liste
-  colNames <- c("Code Commune", "Nom Commune", colNames)
-  colnames(data) <- colNames
-  return(data)
-}
-
-```
-
-
-
-
 
 ## Create a unique function to transform the data
 
@@ -219,25 +201,61 @@ We will create a unique function that will perform all the transformations we ha
 
 
 transformData <- function(data, year){
-  data <- renameRows(data)
+  
+  mapping <- list(
+    "Nb.de.pers..âgées.de.80.ans.ou.." = "Nb 80+",
+    "Part.des.pers..âgées.de.80.ans.ou.." = "Prop 80+",
+    "Nb.de.pers..âgées.de...de.25.ans" = "Nb -25",
+    "Nb.de.pers..âgées.de.25.à.64.ans" = "Nb 25-64",
+    "Nb.de.pers..âgées.de.65.ans.ou.." = "Nb 65+",
+    "Nb.de.pers..âgées..de.75.ans.ou.plus" = "Nb 75+",
+    "Part.des.pers..âgées.de...15.ans" = "Prop -15",
+    "Part.des.pers..âgées.de...de.25.ans" = "Prop -25",
+    "Part.des.pers..âgées.de.25.à.64.ans" = "Prop 25-64",
+    "Part.des.pers..âgées.de.65.ans.ou.." = "Prop 65+",
+    "Part.des.pers..âgées.de.75.ans.ou.." = "Prop 75+",
+    "Taux.de.natalité.annuel.moyen.1999" = "Taux Nat",
+    "Taux.de.mortalité.annuel.moyen.1999" = "Taux Mort",
+    "Taux.de.natalité.annuel.moyen.2010" = "Taux Nat",
+    "Taux.de.mortalité.annuel.moyen.2010" = "Taux Mort",
+    "Taux.de.natalité.annuel.moyen.2015" = "Taux Nat",
+    "Taux.de.mortalité.annuel.moyen.2015" = "Taux Mort"
+  )
+  newColnames <- renameColumns(names(data), mapping, year)
+  colnames(data) <- newColnames
   data <- removeColumns(data)
   
   newOrder <- c("Code Commune", "Nom Commune",
-              "Nb -25", "Nb 25-64", "Nb 65+",
-              "Prop -25", "Prop 25-64", "Prop 65+",
-              "Taux Nat 1999-2010", "Taux Mort 1999-2010"
-              )
-  data <- reorganizeColumns(data, newOrder)
+                "Nb -25", "Nb 25-64", "Nb 65+",
+                "Prop -25", "Prop 25-64", "Prop 65+",
+                "Taux Nat", "Taux Mort"
+                )
+  data <- reorganizeColumns(data, newOrder, year)
   
   data <- removeNARows(data)
   data <- removeDoubledRows(data)
   data <- convertToNumeric(data)
-  data <- addYearToColumns(data, year)
+  
   return(data)
 }
 
 ``` 
 
+
+## Export data 
+
+We will export the transformed data to a new .csv file. The new file will have the same name as the input file but stored in the right folder.
+
+``` {r exportData}
+# Export the data to a new .csv file
+exportData <- function(data){
+  path <- "../../cleanData/demographies/"
+  fileName <- paste0("AgePopulation_transformed.csv")
+  outputFile <- paste0(path, fileName)
+  write.table(data, outputFile, row.names = FALSE, sep = ";", col.names = TRUE, quote = FALSE)
+}
+
+```
 
 ## Merge all files in one
 
@@ -251,8 +269,8 @@ data2 = read.csv("../../rawData/demographies/AgePopulation_2015.csv", sep = ";",
 data3 = read.csv("../../rawData/demographies/AgePopulation_2021.csv", sep = ";",header = TRUE, skip = 2)
 
 # Transform the data
-data1 <- transformData(data1, 2010)
 data2 <- transformData(data2, 2015)
+data1 <- transformData(data1, 2010)
 data3 <- transformData(data3, 2021)
 head(data1)
 head(data2)
@@ -262,27 +280,11 @@ head(data3)
 data <- merge(data1, data2, by = c("Code Commune", "Nom Commune"), all = TRUE)
 data <- merge(data, data3, by = c("Code Commune", "Nom Commune"), all = TRUE)
 
-
 head(data)
 
-
-
-```
-
-
-## Export data 
-
-We will export the transformed data to a new .csv file. The new file will have the same name as the input file but stored in the right folder.
-
-``` {r exportData}
 # Export the data to a new .csv file
-#path <- "../../cleanData/demographies/"
-#outputFile <- paste0(path, fileName)
-#write.table(data, outputFile, row.names = FALSE, sep = ";", col.names = TRUE, quote = FALSE)
-
+exportData(data)
 ```
-
-
 
 
 
