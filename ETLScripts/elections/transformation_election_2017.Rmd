@@ -1,0 +1,113 @@
+---
+title: "TransformElectionData2017"
+author: "Lennon Herrmann"
+date: "2024-11-21"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Charger les données à partir du fichier Excel
+library(readxl)
+library(openxlsx)
+library(dplyr)
+
+# Charger les résultats des élections
+file_path <- "../../rawData/elections/resultats-burvot-t1-presidentielle_2017.xlsx"
+df <- read_excel(file_path)
+
+
+
+# Calculer les colonnes "% Voix/Votant"
+df$`% Voix/Votant1` <- (df$Voix1 / df$Votants) * 100
+df$`% Voix/Votant2` <- (df$Voix2 / df$Votants) * 100
+df$`% Voix/Votant3` <- (df$Voix3 / df$Votants) * 100
+df$`% Voix/Votant4` <- (df$Voix4 / df$Votants) * 100
+df$`% Voix/Votant5` <- (df$Voix5 / df$Votants) * 100
+df$`% Voix/Votant6` <- (df$Voix6 / df$Votants) * 100
+df$`% Voix/Votant7` <- (df$Voix7 / df$Votants) * 100
+df$`% Voix/Votant8` <- (df$Voix8 / df$Votants) * 100
+df$`% Voix/Votant9` <- (df$Voix9 / df$Votants) * 100
+df$`% Voix/Votant10` <- (df$Voix10 / df$Votants) * 100
+df$`% Voix/Votant11` <- (df$Voix11 / df$Votants) * 100
+
+# Créer un vecteur qui associe les candidats à leurs partis
+candidats_parti <- c(
+  "DUPONT-AIGNAN" = "D", "LE PEN" = "ED", "MACRON" = "C", "HAMON" = "G", 
+  "ARTHAUD" = "EG", "POUTOU" = "EG", "CHEMINADE" = "C", "LASSALLE" = "C", 
+  "MÉLENCHON" = "G", "ASSELINEAU" = "D", "FILLON" = "D"
+)
+
+# Créer une fonction pour calculer les totaux par parti et ajouter les colonnes dans df
+calculate_totals <- function(df, candidats_parti) {
+  # Initialiser les colonnes pour chaque parti
+  for (parti in c("EG", "G", "C", "D", "ED")) {
+    df[[paste0("Voix", parti)]] <- 0
+    df[[paste0("% Voix/Votant", parti)]] <- 0
+    df[[paste0("% Voix/Ins", parti)]] <- 0
+    df[[paste0("% Voix/Exp", parti)]] <- 0
+  }
+
+  # Calculer les totaux pour chaque parti
+  for (parti in c("EG", "G", "C", "D", "ED")) {
+    candidats_parti_idx <- which(candidats_parti == parti)
+
+    # Additionner les voix pour chaque parti
+    for (i in candidats_parti_idx) {
+      df[[paste0("Voix", parti)]] <- df[[paste0("Voix", parti)]] + df[[paste0("Voix", i)]]
+      df[[paste0("% Voix/Votant", parti)]] <- df[[paste0("% Voix/Votant", parti)]] + df[[paste0("% Voix/Votant", i)]]
+      df[[paste0("% Voix/Ins", parti)]] <- df[[paste0("% Voix/Ins", parti)]] + df[[paste0("% Voix/Ins", i)]]
+      df[[paste0("% Voix/Exp", parti)]] <- df[[paste0("% Voix/Exp", parti)]] + df[[paste0("% Voix/Exp", i)]]
+    }
+  }
+
+  return(df)
+}
+
+# Appliquer la fonction pour calculer les totaux
+df <- calculate_totals(df, candidats_parti)
+
+# Réorganiser les colonnes : regrouper par partis
+new_order <- c(
+  names(df)[1:18],    # Colonnes avant les Voix
+  "VoixEG", "% Voix/VotantEG", "% Voix/InsEG", "% Voix/ExpEG",  # Parti EG
+  "VoixG", "% Voix/VotantG", "% Voix/InsG", "% Voix/ExpG",  # Parti G
+  "VoixC", "% Voix/VotantC", "% Voix/InsC", "% Voix/ExpC",  # Parti C
+  "VoixD", "% Voix/VotantD", "% Voix/InsD", "% Voix/ExpD",  # Parti D
+  "VoixED", "% Voix/VotantED", "% Voix/InsED", "% Voix/ExpED" # Parti ED
+)
+
+# Appliquer l'ordre des colonnes
+df <- df[, new_order]
+
+# Créer la colonne Code
+df <- df %>% mutate(Code = paste0(`Code du département`, `Code de la commune`, `Code du b.vote`))
+
+# Enlever les colonnes Code département, Code de la commune et Code du b.vote
+df <- df %>% select(-`Code du département`, -`Code de la commune`, -`Code du b.vote`)
+
+# Enlever les colonnes Libellé du département, Code de la circonscription, Libellé de la circonscription, Inscrits, Abstentions, % Abs/Ins, % Vot/Ins
+df <- df %>% select(-`Libellé du département`, -`Code de la circonscription`, -`Libellé de la circonscription`, -`Inscrits`, -`Abstentions`, -`% Abs/Ins`, -`% Vot/Ins`)
+
+# Ajouter une colonne nonExp (somme des Blancs + Nuls)
+df <- df %>% mutate(nonExp = Blancs + Nuls)
+
+# Enlever Blancs, % Blancs/Ins, % Blancs/Vot, Nuls, % Nuls/Ins, % Nuls/Vot
+df <- df %>% select(-`Blancs`, -`% Blancs/Ins`, -`% Blancs/Vot`, -`Nuls`, -`% Nuls/Ins`, -`% Nuls/Vot`)
+
+# Ajouter une colonne avec l'année de l'élection (2022)
+df <- df %>% mutate(Annee = 2017)
+
+# mettre nonExp juste après Votants
+df <- df %>% select(Annee, Code, `Libellé de la commune`, `Votants`, nonExp, everything())
+
+# Sauvegarder le fichier avec les totaux par parti et exporte le en UTF-8
+write.xlsx(df, "../../cleanData/elections/resultats-burvot-t1-presidentielle_2017.xlsx", encoding = "UTF-8")
+
+#print message succes
+print("Le fichier a été transformé avec succès !")
+
+
+
+```

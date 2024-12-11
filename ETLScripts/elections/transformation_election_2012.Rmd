@@ -1,0 +1,64 @@
+---
+title: "transformation_election_2012"
+author: "Lennon Herrmann"
+date: "2024-11-21"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Charger les bibliothèques nécessaires
+library(readxl)
+library(openxlsx)
+library(dplyr)
+
+# Charger les résultats des élections
+file_path <- "../../rawData/elections/resultats-burvot-t1-presidentielle_2012.xlsx"
+df <- read_excel(file_path)
+
+# Calculer les colonnes "% Voix/Votant"
+df$`% Voix/Votant` <- (df$Voix / df$Votants) * 100
+
+# Regrouper les résultats par lieu de vote (Code departement, code commune, code de la circonscription, code du bureau de vote)
+df_grouped <- df %>%
+  group_by(`Code du département`, `Code de la commune`, `Code de la circonscription`, `Code du b.vote`) %>%
+  summarise(
+    # Ajouter la colonne Votants mais en prenant la valeur du premier enregistrement
+    Votants = first(Votants),
+    
+    # Afficher la colonne Libellé de la commune
+    `Libellé de la commune` = first(`Libellé de la commune`),
+    
+    VoixDUPONT_AIGNAN = sum(Voix[Nom == "DUPONT-AIGNAN"]),
+    VoixLE_PEN = sum(Voix[Nom == "LE PEN"]),
+    VoixARTHAUD = sum(Voix[Nom == "ARTHAUD"]),
+    VoixPOUTOU = sum(Voix[Nom == "POUTOU"]),
+    VoixCHEMINADE = sum(Voix[Nom == "CHEMINADE"]),
+    VoixMELENCHON = sum(Voix[Dim == "MELE"]),
+    VoixHOLLANDE = sum(Voix[Nom == "HOLLANDE"]),
+    VoixSARKOZY = sum(Voix[Nom == "SARKOZY"]),
+    VoixBAYROU = sum(Voix[Nom == "BAYROU"]),
+    VoixJOLY = sum(Voix[Nom == "JOLY"]),
+    
+    # Calculer le pourcentage total des voix pour chaque candidat par lieu de vote
+    `% Voix/VotantDUPONT_AIGNAN` = sum(`% Voix/Votant`[Nom == "DUPONT-AIGNAN"]),
+    `% Voix/VotantLE_PEN` = sum(`% Voix/Votant`[Nom == "LE PEN"]),
+    `% Voix/VotantARTHAUD` = sum(`% Voix/Votant`[Nom == "ARTHAUD"]),
+    `% Voix/VotantPOUTOU` = sum(`% Voix/Votant`[Nom == "POUTOU"]),
+    `% Voix/VotantCHEMINADE` = sum(`% Voix/Votant`[Nom == "CHEMINADE"]),
+    `% Voix/VotantMELENCHON` = sum(`% Voix/Votant`[Dim == "MELE"]),
+    `% Voix/VotantHOLLANDE` = sum(`% Voix/Votant`[Nom == "HOLLANDE"]),
+    `% Voix/VotantSARKOZY` = sum(`% Voix/Votant`[Nom == "SARKOZY"]),
+    `% Voix/VotantBAYROU` = sum(`% Voix/Votant`[Nom == "BAYROU"]),
+    `% Voix/VotantJOLY` = sum(`% Voix/Votant`[Nom == "JOLY"])
+  )
+
+# Sauvegarder le fichier modifié
+write.xlsx(df_grouped, "../../rawData/elections/resultats-burvot-t1-presidentielle_2012_modified.xlsx")
+
+# Succes message
+print("Les résultats ont été agrégés par lieu de vote et le fichier a été sauvegardé.")
+
+
+```

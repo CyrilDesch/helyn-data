@@ -1,0 +1,98 @@
+---
+title: "transformation_election_2012_partie2"
+author: "Lennon Herrmann"
+date: "2024-11-21"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# Charger les données à partir du fichier Excel
+library(readxl)
+library(openxlsx)
+library(dplyr)
+
+# Créer un vecteur associant les candidats à leurs partis
+candidats_parti <- c(
+  "DUPONT_AIGNAN" = "D", 
+  "LE_PEN" = "ED", 
+  "ARTHAUD" = "EG", 
+  "POUTOU" = "EG", 
+  "CHEMINADE" = "D", 
+  "MELENCHON" = "EG", 
+  "HOLLANDE" = "G",
+  "SARKOZY" = "D",
+  "BAYROU" = "C",
+  "JOLY" = "G"
+)
+
+# Charger les résultats des élections
+file_path <- "../../rawData/elections/resultats-burvot-t1-presidentielle_2012_modified.xlsx"
+df <- read_excel(file_path)
+
+
+# Creation d'une colonne Voix qui ajoute les voix de chaque candidat colonne E + .. colonne N
+df$Voix <- rowSums(df[, 7:16], na.rm = TRUE)
+
+# Créer une fonction pour calculer les totaux par parti et ajouter les colonnes dans df
+calculate_totals <- function(df, candidats_parti) {
+  # Initialiser les colonnes pour chaque parti
+  for (parti in c("EG", "G", "C", "D", "ED")) {
+    df[[paste0("Voix", parti)]] <- 0
+    df[[paste0("% Voix/Votant", parti)]] <- 0
+  }
+
+  # Calculer les totaux pour chaque parti
+  for (parti in c("EG", "G", "C", "D", "ED")) {
+    # Trouver les candidats associés à ce parti
+    candidats_meme_parti <- names(candidats_parti)[candidats_parti == parti]
+
+    # Additionner les voix pour chaque parti
+    for (i in candidats_meme_parti) {
+      df[[paste0("Voix", parti)]] <- df[[paste0("Voix", parti)]] + df[[paste0("Voix", i)]]
+      df[[paste0("% Voix/Votant", parti)]] <- df[[paste0("% Voix/Votant", parti)]] + df[[paste0("% Voix/Votant", i)]]
+    }
+  }
+
+  return(df)
+}
+
+# Appliquer la fonction pour calculer les totaux
+df <- calculate_totals(df, candidats_parti)
+
+# Ajouter la colonne nonExp
+df$nonExp <- df$Votants - df$Voix
+
+# Supprimer les colonnes spécifiques
+colonnes_a_supprimer <- c(
+  "VoixDUPONT_AIGNAN", "VoixLE_PEN", "VoixARTHAUD", "VoixPOUTOU", 
+  "VoixCHEMINADE", "VoixMELENCHON", "VoixHOLLANDE", "VoixSARKOZY", 
+  "VoixBAYROU", "VoixJOLY", "% Voix/VotantDUPONT_AIGNAN", 
+  "% Voix/VotantLE_PEN", "% Voix/VotantARTHAUD", "% Voix/VotantPOUTOU", 
+  "% Voix/VotantCHEMINADE", "% Voix/VotantMELENCHON", "% Voix/VotantHOLLANDE", 
+  "% Voix/VotantSARKOZY", "% Voix/VotantBAYROU", "% Voix/VotantJOLY",
+  "Voix"
+)
+
+
+df <- df %>% select(-all_of(colonnes_a_supprimer))
+
+# Créer la colonne Code
+df <- df %>% mutate(Code = paste0(`Code du département`, `Code de la commune`, `Code du b.vote`))
+
+# Enlever les colonnes Code département, Code de la commune et Code du b.vote
+df <- df %>% select(-`Code du département`, -`Code de la commune`, -`Code du b.vote`, -`Code de la circonscription`)
+
+# Ajouter une colonne avec l'année de l'élection (2022)
+df <- df %>% mutate(Annee = 2012)
+
+# mettre nonExp juste après Votants
+df <- df %>% select(Annee, Code, `Libellé de la commune`, `Votants`, nonExp, everything())
+
+# Sauvegarder le fichier avec les totaux par parti
+write.xlsx(df, "../../cleanData/elections/resultats-burvot-t1-presidentielle_2012.xlsx")
+
+# Message de succes
+print("Les totaux par parti ont été ajoutés et le fichier a été sauvegardé.")
+
+```
