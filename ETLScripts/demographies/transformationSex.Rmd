@@ -27,7 +27,7 @@ This script take .csv files as input and transform them into a new .csv file. Th
 # Load data from the input directory : /rawData/demographies/
 # First file to be loaded : Sexe2010.csv
 path <- "../../rawData/demographies/"
-fileName <- "Sexe2010.csv"
+fileName <- "Sexe2021.csv"
 inputFile <- paste0(path, fileName)
 data <- read.csv(inputFile, sep = ";",header = TRUE, skip = 2) # skip 2 first lines that are not needed
 head(data)
@@ -41,10 +41,11 @@ The columns names are not very readable. Some even got the same name. We will re
 ``` {r renameRows}
 # Rename the rows
 colNames <- c("Code Commune", "Nom Commune",
-              "Nb H 15-24 ans", "Nb H total", "Nb H 25-64 ans", "Nb H 65+ ans", 
-              "Nb F total", "Nb F 15-24 ans", "Nb F 25-64 ans", "Nb F 65+ ans")
+              "Nb_H_total", "Nb_H_15-24", "Nb_H_25-64", "Nb_H_65+", 
+              "Nb_F_total", "Nb_F_15-24", "Nb_F_25-64", "Nb_F_65+")
 colnames(data) <- colNames
 head(data)
+
 ``` 
 
 ## Reorganize clomumns order
@@ -54,9 +55,9 @@ The columns are not in a logical order. We will reorganize them in a more logica
 ``` {r reorganizeColumns}
 # Reorganize the columns from the names of the columns
 newOrder <- c("Code Commune", "Nom Commune",
-              "Nb H total", "Nb F total", 
-              "Nb H 15-24 ans", "Nb H 25-64 ans", "Nb H 65+ ans",
-              "Nb F 15-24 ans", "Nb F 25-64 ans", "Nb F 65+ ans")
+              "Nb_H_total", "Nb_F_total", 
+              "Nb_H_15-24", "Nb_H_25-64", "Nb_H_65+",
+              "Nb_F_15-24", "Nb_F_25-64", "Nb_F_65+")
 data <- data[, newOrder]
 head(data)
 
@@ -67,17 +68,17 @@ Some rows have missing values. We will remove these rows and save the id and nam
 
 ``` {r removeMissingValues}
 # Print the number of missing values ("N/A - résultat non disponible") in the columns 3 to 10 (the columns with numeric data)
-sum(data$`Nb H total` == "N/A - résultat non disponible")
+sum(data$`Nb_H_total` == "N/A - résultat non disponible")
 
 # Save the id and name of the cities with missing values
-missingValuesCities <- data[data$`Nb H total` == "N/A - résultat non disponible", c("Code Commune", "Nom Commune")]
+missingValuesCities <- data[data$`Nb_H_total` == "N/A - résultat non disponible", c("Code Commune", "Nom Commune")]
 missingValuesCities
 
 # Remove the rows with the value "N/A - résultat non disponible" in the columns 3 to 10
-data <- data[!data$`Nb H total` == "N/A - résultat non disponible",]
+data <- data[!data$`Nb_H_total` == "N/A - résultat non disponible",]
 
 # Print again the number of NA values, should be 0
-sum(data$`Nb H total` == "N/A - résultat non disponible")
+sum(data$`Nb_H_total` == "N/A - résultat non disponible")
 ```
 
 
@@ -101,6 +102,12 @@ The columns with numeric data are currently in character format. We will convert
 ``` {r convertToNumeric}
 # Convert the columns to numeric except the first two columns
 data[,3:10] <- sapply(data[,3:10], as.numeric)
+data[1] <- sapply(data[1], as.numeric)
+
+
+# If the first column is numeric, we will convert it to character with zeros at the beginning to make it 5 characters long
+data$`Code Commune` <- sprintf("%05d", data$`Code Commune`)
+head(data)
 ```  
 
 
@@ -110,13 +117,13 @@ We will first add a column with the Population Totale for each city. We then use
 
 ``` {r addTotalPopulation}
 # Add a column with the total population for each city
-data$`Population Totale` <- data$`Nb H total` + data$`Nb F total`
+data$`Population_Totale` <- data$`Nb_H_total` + data$`Nb_F_total`
 
 # Add a column with the proportion of men
-data$`Proportion H` <- round(data$`Nb H total` / data$`Population Totale`, 3)
+data$`Proportion_H` <- round(data$`Nb_H_total` / data$`Population_Totale`, 3)
 
 # Add a column with the proportion of women
-data$`Proportion F` <- round(data$`Nb F total` / data$`Population Totale`, 3)
+data$`Proportion_F` <- round(data$`Nb_F_total` / data$`Population_Totale`, 3)
 
 head(data)
 ```  
