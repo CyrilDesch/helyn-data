@@ -46,24 +46,24 @@ The columns names are not very readable. We will rename them to make them more u
 
 # Mapping of current names to new names (without years)
 mapping <- list(
-  "Nb.de.pers..âgées.de.80.ans.ou.." = "Nb 80+",
-  "Part.des.pers..âgées.de.80.ans.ou.." = "Prop 80+",
-  "Nb.de.pers..âgées.de...de.25.ans" = "Nb -25",
-  "Nb.de.pers..âgées.de.25.à.64.ans" = "Nb 25-64",
-  "Nb.de.pers..âgées.de.65.ans.ou.." = "Nb 65+",
-  "Nb.de.pers..âgées..de.75.ans.ou.plus" = "Nb 75+",
-  "Part.des.pers..âgées.de...15.ans" = "Prop -15",
-  "Part.des.pers..âgées.de...de.25.ans" = "Prop -25",
-  "Part.des.pers..âgées.de.25.à.64.ans" = "Prop 25-64",
-  "Part.des.pers..âgées.de.65.ans.ou.." = "Prop 65+",
-  "Part.des.pers..âgées.de.75.ans.ou.." = "Prop 75+",
-  "Taux.de.natalité.annuel.moyen.1999" = "Taux Nat",
-  "Taux.de.mortalité.annuel.moyen.1999" = "Taux Mort",
-  "Taux.de.natalité.annuel.moyen.2010" = "Taux Nat",
-  "Taux.de.mortalité.annuel.moyen.2010" = "Taux Mort",
-  "Taux.de.natalité.annuel.moyen.2015" = "Taux Nat",
-  "Taux.de.mortalité.annuel.moyen.2015" = "Taux Mort"
-)
+    "Nb.de.pers..âgées.de.80.ans.ou.." = "Nb_80+",
+    "Part.des.pers..âgées.de.80.ans.ou.." = "Prop_80+",
+    "Nb.de.pers..âgées.de...de.25.ans" = "Nb_-25",
+    "Nb.de.pers..âgées.de.25.à.64.ans" = "Nb_25-64",
+    "Nb.de.pers..âgées.de.65.ans.ou.." = "Nb_65+",
+    "Nb.de.pers..âgées..de.75.ans.ou.plus" = "Nb_75+",
+    "Part.des.pers..âgées.de...15.ans" = "Prop_-15",
+    "Part.des.pers..âgées.de...de.25.ans" = "Prop_-25",
+    "Part.des.pers..âgées.de.25.à.64.ans" = "Prop_25-64",
+    "Part.des.pers..âgées.de.65.ans.ou.." = "Prop_65+",
+    "Part.des.pers..âgées.de.75.ans.ou.." = "Prop_75+",
+    "Taux.de.natalité.annuel.moyen.1999" = "Taux_Nat",
+    "Taux.de.mortalité.annuel.moyen.1999" = "Taux_Mort",
+    "Taux.de.natalité.annuel.moyen.2010" = "Taux_Nat",
+    "Taux.de.mortalité.annuel.moyen.2010" = "Taux_Mort",
+    "Taux.de.natalité.annuel.moyen.2015" = "Taux_Nat",
+    "Taux.de.mortalité.annuel.moyen.2015" = "Taux_Mort"
+  )
 
 # Rename columns
 renameColumns <- function(colnames, mapping, year) {
@@ -203,23 +203,23 @@ We will create a unique function that will perform all the transformations we ha
 transformData <- function(data, year){
   
   mapping <- list(
-    "Nb.de.pers..âgées.de.80.ans.ou.." = "Nb 80+",
-    "Part.des.pers..âgées.de.80.ans.ou.." = "Prop 80+",
-    "Nb.de.pers..âgées.de...de.25.ans" = "Nb -25",
-    "Nb.de.pers..âgées.de.25.à.64.ans" = "Nb 25-64",
-    "Nb.de.pers..âgées.de.65.ans.ou.." = "Nb 65+",
-    "Nb.de.pers..âgées..de.75.ans.ou.plus" = "Nb 75+",
-    "Part.des.pers..âgées.de...15.ans" = "Prop -15",
-    "Part.des.pers..âgées.de...de.25.ans" = "Prop -25",
-    "Part.des.pers..âgées.de.25.à.64.ans" = "Prop 25-64",
-    "Part.des.pers..âgées.de.65.ans.ou.." = "Prop 65+",
-    "Part.des.pers..âgées.de.75.ans.ou.." = "Prop 75+",
-    "Taux.de.natalité.annuel.moyen.1999" = "Taux Nat",
-    "Taux.de.mortalité.annuel.moyen.1999" = "Taux Mort",
-    "Taux.de.natalité.annuel.moyen.2010" = "Taux Nat",
-    "Taux.de.mortalité.annuel.moyen.2010" = "Taux Mort",
-    "Taux.de.natalité.annuel.moyen.2015" = "Taux Nat",
-    "Taux.de.mortalité.annuel.moyen.2015" = "Taux Mort"
+    "Nb.de.pers..âgées.de.80.ans.ou.." = "Nb_80+",
+    "Part.des.pers..âgées.de.80.ans.ou.." = "Prop_80+",
+    "Nb.de.pers..âgées.de...de.25.ans" = "Nb_-25",
+    "Nb.de.pers..âgées.de.25.à.64.ans" = "Nb_25-64",
+    "Nb.de.pers..âgées.de.65.ans.ou.." = "Nb_65+",
+    "Nb.de.pers..âgées..de.75.ans.ou.plus" = "Nb_75+",
+    "Part.des.pers..âgées.de...15.ans" = "Prop_-15",
+    "Part.des.pers..âgées.de...de.25.ans" = "Prop_-25",
+    "Part.des.pers..âgées.de.25.à.64.ans" = "Prop_25-64",
+    "Part.des.pers..âgées.de.65.ans.ou.." = "Prop_65+",
+    "Part.des.pers..âgées.de.75.ans.ou.." = "Prop_75+",
+    "Taux.de.natalité.annuel.moyen.1999" = "Taux_Nat",
+    "Taux.de.mortalité.annuel.moyen.1999" = "Taux_Mort",
+    "Taux.de.natalité.annuel.moyen.2010" = "Taux_Nat",
+    "Taux.de.mortalité.annuel.moyen.2010" = "Taux_Mort",
+    "Taux.de.natalité.annuel.moyen.2015" = "Taux_Nat",
+    "Taux.de.mortalité.annuel.moyen.2015" = "Taux_Mort"
   )
   newColnames <- renameColumns(names(data), mapping, year)
   colnames(data) <- newColnames
