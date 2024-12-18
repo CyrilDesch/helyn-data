@@ -77,7 +77,7 @@ renameColumns <- function(colnames, mapping, year) {
     base_name <- gsub(".[0-9]{4}$", "", colname)
     # Replace the base name with the new name if it exists in the mapping
     if (base_name %in% names(mapping)) {
-      paste(mapping[[base_name]], year)
+      paste(mapping[[base_name]])#, year)
     } else {
       colname  # Keep unchanged if no match
     }
@@ -113,14 +113,14 @@ The columns are not in a logical order. We will reorganize them in a more logica
 
 ``` {r reorganizeColumns}
   newOrder <- c("Code Commune", "Nom Commune",
-                "Nb -25", "Nb 25-64", "Nb 65+",
-                "Prop -25", "Prop 25-64", "Prop 65+",
-                "Taux Nat", "Taux Mort"
+                "Nb_-25", "Nb_25-64", "Nb_65+",
+                "Prop_-25", "Prop_25-64", "Prop_65+",
+                "Taux_Nat", "Taux_Mort"
                 )
 # Reorganize the columns from the names of the columns
 reorganizeColumns <- function(data, newOrder, year){
-  newOrder <- paste0(newOrder, " ", year)
-  newOrder[1:2] <- c("Code Commune", "Nom Commune")
+  #newOrder <- paste0(newOrder, " ", year)
+  #newOrder[1:2] <- c("Code Commune", "Nom Commune")
   data <- data[, newOrder]
   return(data)
 }
@@ -226,9 +226,9 @@ transformData <- function(data, year){
   data <- removeColumns(data)
   
   newOrder <- c("Code Commune", "Nom Commune",
-                "Nb -25", "Nb 25-64", "Nb 65+",
-                "Prop -25", "Prop 25-64", "Prop 65+",
-                "Taux Nat", "Taux Mort"
+                "Nb_-25", "Nb_25-64", "Nb_65+",
+                "Prop_-25", "Prop_25-64", "Prop_65+",
+                "Taux_Nat", "Taux_Mort"
                 )
   data <- reorganizeColumns(data, newOrder, year)
   
@@ -238,6 +238,9 @@ transformData <- function(data, year){
   
   return(data)
 }
+
+data <- transformData(data, year)
+head(data)
 
 ``` 
 
@@ -250,10 +253,11 @@ We will export the transformed data to a new .csv file. The new file will have t
 # Export the data to a new .csv file
 exportData <- function(data){
   path <- "../../cleanData/demographies/"
-  fileName <- paste0("AgePopulation_transformed.csv")
   outputFile <- paste0(path, fileName)
   write.table(data, outputFile, row.names = FALSE, sep = ";", col.names = TRUE, quote = FALSE)
 }
+
+exportData(data)
 
 ```
 
@@ -283,7 +287,7 @@ data <- merge(data, data3, by = c("Code Commune", "Nom Commune"), all = TRUE)
 head(data)
 
 # Export the data to a new .csv file
-exportData(data)
+#exportData(data)
 ```
 
 
