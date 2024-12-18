@@ -102,11 +102,10 @@ The columns with numeric data are currently in character format. We will convert
 ``` {r convertToNumeric}
 # Convert the columns to numeric except the first two columns
 data[,3:10] <- sapply(data[,3:10], as.numeric)
-data[1] <- sapply(data[1], as.numeric)
 
 
-# If the first column is numeric, we will convert it to character with zeros at the beginning to make it 5 characters long
-data$`Code Commune` <- sprintf("%05d", data$`Code Commune`)
+# We will a zero character to Code Commune to 4 characters long codes to make them 5 characters long
+data$`Code Commune` <- ifelse(nchar(data$`Code Commune`) == 4, paste0("0", data$`Code Commune`), data$`Code Commune`)
 head(data)
 ```  
 
