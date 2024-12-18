@@ -1,0 +1,40 @@
+---
+title: "CombineElectionData"
+author: "Lennon Herrmann"
+date: "2024-12-11"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Charger les données à partir du fichier Excel
+library(readxl)
+library(openxlsx)
+library(dplyr)
+
+# Charger les résultats des élections
+file2022_path <- "../../cleanData/elections/resultats-burvot-t1-presidentielle_2022.xlsx"
+df2022 <- read_excel(file2022_path)
+
+file2017_path <- "../../cleanData/elections/resultats-burvot-t1-presidentielle_2017.xlsx"
+df2017 <- read_excel(file2017_path)
+
+file2012_path <- "../../cleanData/elections/resultats-burvot-t1-presidentielle_2012.xlsx"
+df2012 <- read_excel(file2012_path)
+
+# Supprimer les colonnes 8,9,12,13,16,17,20,21,24,25 de df2022 et df2017
+df2022 <- df2022[,-c(8,9,12,13,16,17,20,21,24,25)]
+df2017 <- df2017[,-c(8,9,12,13,16,17,20,21,24,25)]
+
+# combiner les fichiers, d'abord 2012 puis 2017 puis 2022
+df <- rbind(df2012, df2017, df2022)
+
+# Enregistrer le fichier combiné
+write.xlsx(df, "../../cleanData/elections/resultats-burvot-t1-presidentielle_2012-2022.xlsx")
+
+# Message de succès
+print("Fichier combiné enregistré avec succès")
+
+```
+
