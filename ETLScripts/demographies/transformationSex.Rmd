@@ -1,0 +1,185 @@
+---
+title: "TransformationAge"
+output: html_document
+date: "2024-11-21"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Transformation Age
+
+This script take .csv files as input and transform them into a new .csv file. The new file will have the same name as the input file with the suffix "_transformed" added to it. The goal of the script is to transform the data  into a format that is easier to work with. The script will perform the following transformations:
+
+  - Remove columns that are not needed
+  - Rename in a more readable way the columns
+  - Reorganize the columns order in a more logical way
+  - Remove the rows with missing values
+  - Add a column with the total population for each city
+  - Add a column with the proportion of each sex on the total effective (3 decimals)
+  - Add a column with the proportion of each sex on each age group : 15-24y, 25-64y, 65+y (3 decimals)
+
+
+## Input
+
+``` {r printInput} 
+# Load data from the input directory : /rawData/demographies/
+# First file to be loaded : Sexe2010.csv
+path <- "../../rawData/demographies/"
+fileName <- "Sexe2021.csv"
+inputFile <- paste0(path, fileName)
+data <- read.csv(inputFile, sep = ";",header = TRUE, skip = 2) # skip 2 first lines that are not needed
+head(data)
+
+```
+
+## Rename columns
+
+The columns names are not very readable. We will rename them to make them more understandable.
+
+``` {r renameRows}
+# Rename the rows
+colNames <- c("Code Commune", "Nom Commune",
+              "Nb_H_total", "Nb_H_15-24", "Nb_H_25-64", "Nb_H_65+", 
+              "Nb_F_total", "Nb_F_15-24", "Nb_F_25-64", "Nb_F_65+")
+colnames(data) <- colNames
+head(data)
+
+``` 
+## Remove unwanted columns
+
+Some columns are not needed. We will remove them.
+
+``` {r removeColumns}
+# Remove the columns that are not needed based on the column names
+removeColumns <- function(data){
+  data <- data[, !grepl("75|80|-15", colnames(data))]
+  return(data)
+}
+data <- removeColumns(data)
+head(data)
+
+```
+
+## Reorganize clomumns order
+
+The columns are not in a logical order. We will reorganize them in a more logical way.
+
+``` {r reorganizeColumns}
+  newOrder <- c("Code Commune", "Nom Commune",
+                "Nb_-25", "Nb_25-64", "Nb_65+",
+                "Prop_-25", "Prop_25-64", "Prop_65+",
+                "Taux_Nat", "Taux_Mort"
+                )
+# Reorganize the columns from the names of the columns
+newOrder <- c("Code Commune", "Nom Commune",
+              "Nb_H_total", "Nb_F_total", 
+              "Nb_H_15-24", "Nb_H_25-64", "Nb_H_65+",
+              "Nb_F_15-24", "Nb_F_25-64", "Nb_F_65+")
+data <- data[, newOrder]
+head(data)
+
+```
+## Remove rows with missing values
+
+Some rows have missing values. We will remove these rows and save the id and name of the cities with missing values in an other data frame.
+
+``` {r removeMissingValues}
+
+#columnNameToTest <- paste("Nb 25-64", 2010)
+
+# Print the number of missing values ("N/A - résultat non disponible") in the columns 3 to 10 (the columns with numeric data)
+sum(data$`Nb_H_total` == "N/A - résultat non disponible")
+
+# Save the id and name of the cities with missing values
+missingValuesCities <- data[data$`Nb_H_total` == "N/A - résultat non disponible", c("Code Commune", "Nom Commune")]
+missingValuesCities
+
+# Remove the rows with the value "N/A - résultat non disponible" in the columns 3 to 10
+data <- data[!data$`Nb_H_total` == "N/A - résultat non disponible",]
+
+# Print again the number of NA values, should be 0
+sum(data$`Nb_H_total` == "N/A - résultat non disponible")
+```
+
+
+## Remove the doubled rows
+
+If there are doubled rows, we will remove them.
+
+``` {r removeDoubledRows}
+
+# Remove the doubled rows
+data <- data[!duplicated(data),]
+
+
+```
+
+## Remove doubled rows
+
+Some rows are doubled. We will remove them.
+
+``` {r removeDoubledRows}
+
+# Remove the doubled rows
+removeDoubledRows <- function(data){
+  data <- data[!duplicated(data$`Code Commune`),]
+  return(data)
+}
+
+data <- removeDoubledRows(data)
+
+```
+
+## Convert the columns to numeric
+
+The columns with numeric data are currently in character format. We will convert them to numeric.
+
+``` {r convertToNumeric}
+# Convert the columns to numeric except the first two columns
+data[,3:10] <- sapply(data[,3:10], as.numeric)
+
+
+# We will a zero character to Code Commune to 4 characters long codes to make them 5 characters long
+data$`Code Commune` <- ifelse(nchar(data$`Code Commune`) == 4, paste0("0", data$`Code Commune`), data$`Code Commune`)
+head(data)
+```  
+
+
+## Add the sex repartition for each city
+
+We will first add a column with the Population Totale for each city. We then use it to calculate the proportion of each sex.
+
+``` {r addTotalPopulation}
+# Add a column with the total population for each city
+data$`Population_Totale` <- data$`Nb_H_total` + data$`Nb_F_total`
+
+# Add a column with the proportion of men
+data$`Proportion_H` <- round(data$`Nb_H_total` / data$`Population_Totale`, 3)
+
+# Add a column with the proportion of women
+data$`Proportion_F` <- round(data$`Nb_F_total` / data$`Population_Totale`, 3)
+
+head(data)
+```  
+
+
+## Export data
+
+We will export the transformed data to a new .csv file. The new file will have the same name as the input file but stored in the right folder.
+
+``` {r exportData}
+# Export the data to a new .csv file
+path <- "../../cleanData/demographies/"
+outputFile <- paste0(path, fileName)
+write.table(data, outputFile, row.names = FALSE, sep = ";", col.names = TRUE, quote = FALSE)
+
+```
+
+
+
+
+
+
+
