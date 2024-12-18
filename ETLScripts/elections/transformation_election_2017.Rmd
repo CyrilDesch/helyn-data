@@ -102,6 +102,8 @@ df <- df %>% mutate(Annee = 2017)
 # mettre nonExp juste après Votants
 df <- df %>% select(Annee, Code, `Libellé de la commune`, `Votants`, nonExp, everything())
 
+df <- df[,-c(8,9,12,13,16,17,20,21,24,25)]
+
 # Sauvegarder le fichier avec les totaux par parti et exporte le en UTF-8
 write.xlsx(df, "../../cleanData/elections/resultats-burvot-t1-presidentielle_2017.xlsx", encoding = "UTF-8")
 
