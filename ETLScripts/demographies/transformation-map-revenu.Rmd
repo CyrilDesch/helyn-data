@@ -1,0 +1,158 @@
+# Pass to data in 200m square to data by polling office
+
+# Requirements
+
+## Import libs
+
+```{r}
+library(sf)
+library(ggplot2)
+library(tmap)
+library(dplyr)
+library(leaflet)
+library(leafgl)
+library(htmlwidgets)
+```
+
+------------------------------------------------------------------------
+# Import and view base datas
+
+## 1. GeoJson bureaux de votes
+
+### 1.1 Import data
+
+```{r}
+bureau_vote_data <- st_read("../../rawData/demographies/test.geojson")
+
+bureau_vote_data <- st_transform(bureau_vote_data, crs = 2154) # Projection to use EPSG:2154 to make intersection
+
+# Ajouter un identifiant unique basé sur l'ordre des lignes
+bureau_vote_data$id <- seq_len(nrow(bureau_vote_data))
+```
+
+### 1.2 View in map
+
+```{r}
+set.seed(42)
+bureau_vote_view_data <- bureau_vote_data[sample(1:nrow(bureau_vote_data), 10000), ]
+
+tmap_mode("view")
+tmap_options(check.and.fix = TRUE)
+tm_shape(bureau_vote_view_data) +
+  tm_borders() +
+  tm_fill(col = "blue", alpha = 0.5) +
+  tm_layout(title = "Carte interactive GeoJSON")
+```
+
+## 2. GeoPackage revenu etc...
+
+### 2.1 Import data
+
+```{r}
+revenu_data <- st_read("../../rawData/demographies/carreaux-revenu.gpkg")
+
+revenu_data <- st_transform(revenu_data, st_crs(bureau_vote_data)) # Projection to use EPSG:2154 to make intersection
+
+revenu_data$id <- seq_len(nrow(revenu_data))
+```
+
+### 2.2 View in map
+
+```{r}
+set.seed(42)
+revenu_view_data <- revenu_data[sample(1:nrow(revenu_data), 1000), ]
+
+tmap_mode("view")
+tm_shape(revenu_view_data) +
+  tm_borders(col = "blue") +
+  tm_fill(col = "lightblue", alpha = 0.5) +
+  tm_layout(title = "Visualisation des Carrés de 200m")
+```
+
+--- 
+
+# Compute part
+
+## Create intersection and proportion between 200m square and poll office zone. Then group datas by poll office id.
+```{r}
+
+bureau_vote_data <- st_make_valid(bureau_vote_data)
+revenu_data <- st_make_valid(revenu_data)
+
+revenu_data_used <- revenu_data
+
+
+# Taille du chunk (nombre de carrés par itération)
+chunk_size <- 50000
+
+# Créer un répertoire pour les résultats intermédiaires
+dir.create("../../rawData/demographie/intermediate_results", showWarnings = FALSE)
+
+# Diviser les données en chunks
+n_chunks <- ceiling(nrow(revenu_data_used) / chunk_size)
+chunk_indices <- split(1:nrow(revenu_data_used), 
+                       ceiling(seq_along(1:nrow(revenu_data_used)) / chunk_size))
+
+# Boucle sur chaque chunk
+for (i in seq_along(chunk_indices)) {
+  
+  # Nom du fichier de sortie pour ce chunk
+  output_file <- paste0("../../rawData/demographie/intermediate_results/chunk_", i, ".geojson")
+  
+  # Vérifier si le chunk a déjà été traité
+  if (file.exists(output_file)) {
+    message(paste("Chunk", i, "déjà traité. Passage au suivant."))
+    next
+  }
+  
+  # Extraire les données pour ce chunk
+  revenu_chunk <- revenu_data_used[chunk_indices[[i]], ]
+  
+  # Calcul des intersections
+  intersections <- tryCatch({
+    st_intersection(revenu_chunk, bureau_vote_data)
+  }, error = function(e) {
+    message(paste("Erreur dans le chunk", i, ":", e$message))
+    return(NULL)
+  })
+  
+  if (is.null(intersections)) next
+  
+  # Calcul des aires et des proportions
+  intersections$area_intersection <- st_area(intersections)
+  intersections$area_carre <- st_area(revenu_chunk[match(intersections$id, revenu_chunk$id), ])
+  intersections$proportion <- as.numeric(intersections$area_intersection / intersections$area_carre)
+  
+  # Agrégation par bureau de vote
+  resultats_chunk <- intersections %>%
+    group_by(codeBureauVote) %>%
+    summarise(
+      ind = sum(ind * proportion, na.rm = TRUE),
+      men = sum(men * proportion, na.rm = TRUE),
+      men_pauv = sum(men_pauv * proportion, na.rm = TRUE),
+      geometry = st_union(geometry)
+    )
+  
+  # Sauvegarder en GeoJSON au lieu de CSV
+  output_file <- paste0("../../rawData/demographie/intermediate_results/chunk_", i, ".geojson")
+  st_write(resultats_chunk, output_file, delete_dsn = TRUE)
+  
+  message(paste("Chunk", i, "terminé et sauvegardé dans", output_file))
+}
+```
+
+## Group files
+
+```{r}
+# Fusionner les résultats finaux
+files <- list.files("../../rawData/demographie/intermediate_results", pattern = "*.geojson", full.names = TRUE)
+resultats_final <- do.call(rbind, lapply(files, st_read))
+
+resultats_final <- st_transform(resultats_final, crs = 4326)
+
+# Sauvegarder le résultat final
+st_write(resultats_final, "../../cleanData/demographie/resultats_bureaux_vote.geojson", delete_dsn = TRUE)
+
+message("Tous les résultats ont été combinés et sauvegardés.")
+```
+
