@@ -1,0 +1,291 @@
+---
+title: "TransformationAge"
+output: html_document
+date: "2024-11-21"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Transformation Age
+
+This script take .csv files as input and transform them into a new .csv file. The new file will have the same name as the input file with the suffix "_transformed" added to it. The goal of the script is to transform the data  into a format that is easier to work with. The script will perform the following transformations:
+
+  - Remove columns that are not needed
+  - Rename in a more readable way the columns
+  - Reorganize the columns order in a more logical way
+  - Remove the rows with missing values
+  - Add a column with the total population for each city
+  - Add a column with the proportion of each sex on the total effective (3 decimals)
+  - Add a column with the proportion of each sex on each age group : 15-24y, 25-64y, 65+y (3 decimals)
+
+
+## Input
+
+``` {r printInput} 
+# Load data from the input directory : /rawData/demographies/
+# First file to be loaded : AgePopulation_2010.csv
+path <- "../../rawData/demographies/"
+year <- 2015
+fileName <- paste0("AgePopulation_", year, ".csv")
+inputFile <- paste0(path, fileName)
+
+data <- read.csv(inputFile, sep = ";",header = TRUE, skip = 2) # skip 2 first lines that are not needed
+head(data)
+
+```
+
+## Rename columns
+
+The columns names are not very readable. We will rename them to make them more understandable.
+
+``` {r renameRows}
+
+
+
+# Mapping of current names to new names (without years)
+mapping <- list(
+    "Nb.de.pers..âgées.de.80.ans.ou.." = "Nb_80+",
+    "Part.des.pers..âgées.de.80.ans.ou.." = "Prop_80+",
+    "Nb.de.pers..âgées.de...de.25.ans" = "Nb_-25",
+    "Nb.de.pers..âgées.de.25.à.64.ans" = "Nb_25-64",
+    "Nb.de.pers..âgées.de.65.ans.ou.." = "Nb_65+",
+    "Nb.de.pers..âgées..de.75.ans.ou.plus" = "Nb_75+",
+    "Part.des.pers..âgées.de...15.ans" = "Prop_-15",
+    "Part.des.pers..âgées.de...de.25.ans" = "Prop_-25",
+    "Part.des.pers..âgées.de.25.à.64.ans" = "Prop_25-64",
+    "Part.des.pers..âgées.de.65.ans.ou.." = "Prop_65+",
+    "Part.des.pers..âgées.de.75.ans.ou.." = "Prop_75+",
+    "Taux.de.natalité.annuel.moyen.1999" = "Taux_Nat",
+    "Taux.de.mortalité.annuel.moyen.1999" = "Taux_Mort",
+    "Taux.de.natalité.annuel.moyen.2010" = "Taux_Nat",
+    "Taux.de.mortalité.annuel.moyen.2010" = "Taux_Mort",
+    "Taux.de.natalité.annuel.moyen.2015" = "Taux_Nat",
+    "Taux.de.mortalité.annuel.moyen.2015" = "Taux_Mort"
+  )
+
+# Rename columns
+renameColumns <- function(colnames, mapping, year) {
+  
+  #Rename the 2 first columns to "Code Commune" and "Nom Commune"
+  colnames[1] <- "Code Commune"
+  colnames[2] <- "Nom Commune"
+  
+  sapply(colnames, function(colname) {
+    # Extract the part before the year
+    base_name <- gsub(".[0-9]{4}$", "", colname)
+    # Replace the base name with the new name if it exists in the mapping
+    if (base_name %in% names(mapping)) {
+      paste(mapping[[base_name]])#, year)
+    } else {
+      colname  # Keep unchanged if no match
+    }
+  })
+}
+
+# Apply the renaming function
+newColnames <- renameColumns(names(data), mapping, year)
+colnames(data) <- newColnames
+
+# Check the result
+head(data)
+
+``` 
+## Remove unwanted columns
+
+Some columns are not needed. We will remove them.
+
+``` {r removeColumns}
+# Remove the columns that are not needed based on the column names
+removeColumns <- function(data){
+  data <- data[, !grepl("75|80|-15", colnames(data))]
+  return(data)
+}
+data <- removeColumns(data)
+head(data)
+
+```
+
+## Reorganize clomumns order
+
+The columns are not in a logical order. We will reorganize them in a more logical way.
+
+``` {r reorganizeColumns}
+  newOrder <- c("Code Commune", "Nom Commune",
+                "Nb_-25", "Nb_25-64", "Nb_65+",
+                "Prop_-25", "Prop_25-64", "Prop_65+",
+                "Taux_Nat", "Taux_Mort"
+                )
+# Reorganize the columns from the names of the columns
+reorganizeColumns <- function(data, newOrder, year){
+  #newOrder <- paste0(newOrder, " ", year)
+  #newOrder[1:2] <- c("Code Commune", "Nom Commune")
+  data <- data[, newOrder]
+  return(data)
+}
+
+data <- reorganizeColumns(data, newOrder, year)
+head(data)
+
+```
+## Remove rows with missing values
+
+Some rows have missing values. We will remove these rows and save the id and name of the cities with missing values in an other data frame.
+
+``` {r removeMissingValues}
+
+#columnNameToTest <- paste("Nb 25-64", 2010)
+
+# Print the number of missing values ("N/A - résultat non disponible") in the columns 3 to 10 (the columns with numeric data)
+sum(data$`Nb 25-64` == "N/A - résultat non disponible")
+sum(data$`Prop 25-64` == "N/A - division par 0")
+
+# Save the id and name of the cities with missing values
+missingValuesCities <- data[data$`Nb 25-64` == "N/A - résultat non disponible", c("Code Commune", "Nom Commune")]
+missingValuesCities <- rbind(missingValuesCities, data[data$`Prop 25-64` == "N/A - division par 0", c("Code Commune", "Nom Commune")])
+missingValuesCities
+
+# Remove the rows with the value "N/A - résultat non disponible" in the columns 3
+removeNARows <- function(data){
+  data <- data[!data[3]== "N/A - résultat non disponible",]
+  data <- data[!data[6]== "N/A - division par 0",]  
+  return(data)
+}
+
+data <- removeNARows(data)
+head(data)
+
+# Print again the number of NA values, should be 0
+sum(data$`Nb 25-64` == "N/A - résultat non disponible")
+sum(data$`Prop 25-64` == "N/A - division par 0")
+
+```
+
+## Remove doubled rows
+
+Some rows are doubled. We will remove them.
+
+``` {r removeDoubledRows}
+
+# Remove the doubled rows
+removeDoubledRows <- function(data){
+  data <- data[!duplicated(data$`Code Commune`),]
+  return(data)
+}
+
+data <- removeDoubledRows(data)
+
+```
+
+## Convert the columns to numeric
+
+The columns with numeric data are currently in character format. We will convert them to numeric.
+
+``` {r convertToNumeric}
+# Convert the columns to numeric except the first two columns
+convertToNumeric <- function(data){
+  data[,3:10] <- sapply(data[,3:10], as.numeric)
+  return(data)
+}
+data <- convertToNumeric(data)
+head(data)
+```  
+
+
+## Create a unique function to transform the data
+
+We will create a unique function that will perform all the transformations we have done so far.
+
+``` {r transformData}
+
+
+transformData <- function(data, year){
+  
+  mapping <- list(
+    "Nb.de.pers..âgées.de.80.ans.ou.." = "Nb_80+",
+    "Part.des.pers..âgées.de.80.ans.ou.." = "Prop_80+",
+    "Nb.de.pers..âgées.de...de.25.ans" = "Nb_-25",
+    "Nb.de.pers..âgées.de.25.à.64.ans" = "Nb_25-64",
+    "Nb.de.pers..âgées.de.65.ans.ou.." = "Nb_65+",
+    "Nb.de.pers..âgées..de.75.ans.ou.plus" = "Nb_75+",
+    "Part.des.pers..âgées.de...15.ans" = "Prop_-15",
+    "Part.des.pers..âgées.de...de.25.ans" = "Prop_-25",
+    "Part.des.pers..âgées.de.25.à.64.ans" = "Prop_25-64",
+    "Part.des.pers..âgées.de.65.ans.ou.." = "Prop_65+",
+    "Part.des.pers..âgées.de.75.ans.ou.." = "Prop_75+",
+    "Taux.de.natalité.annuel.moyen.1999" = "Taux_Nat",
+    "Taux.de.mortalité.annuel.moyen.1999" = "Taux_Mort",
+    "Taux.de.natalité.annuel.moyen.2010" = "Taux_Nat",
+    "Taux.de.mortalité.annuel.moyen.2010" = "Taux_Mort",
+    "Taux.de.natalité.annuel.moyen.2015" = "Taux_Nat",
+    "Taux.de.mortalité.annuel.moyen.2015" = "Taux_Mort"
+  )
+  newColnames <- renameColumns(names(data), mapping, year)
+  colnames(data) <- newColnames
+  data <- removeColumns(data)
+  
+  newOrder <- c("Code Commune", "Nom Commune",
+                "Nb_-25", "Nb_25-64", "Nb_65+",
+                "Prop_-25", "Prop_25-64", "Prop_65+",
+                "Taux_Nat", "Taux_Mort"
+                )
+  data <- reorganizeColumns(data, newOrder, year)
+  
+  data <- removeNARows(data)
+  data <- removeDoubledRows(data)
+  data <- convertToNumeric(data)
+  
+  return(data)
+}
+
+data <- transformData(data, year)
+head(data)
+
+``` 
+
+
+## Export data 
+
+We will export the transformed data to a new .csv file. The new file will have the same name as the input file but stored in the right folder.
+
+``` {r exportData}
+# Export the data to a new .csv file
+exportData <- function(data){
+  path <- "../../cleanData/demographies/"
+  outputFile <- paste0(path, fileName)
+  write.table(data, outputFile, row.names = FALSE, sep = ";", col.names = TRUE, quote = FALSE)
+}
+
+exportData(data)
+
+```
+
+## Merge all files in one
+
+We will merge all the files in one. We will modify each column names to add the year of the data. Then we will merge all the files in one, based on the city code.
+
+``` {r mergeFiles}
+
+# Load the other files
+data1 = read.csv("../../rawData/demographies/AgePopulation_2010.csv", sep = ";",header = TRUE, skip = 2)
+data2 = read.csv("../../rawData/demographies/AgePopulation_2015.csv", sep = ";",header = TRUE, skip = 2)
+data3 = read.csv("../../rawData/demographies/AgePopulation_2021.csv", sep = ";",header = TRUE, skip = 2)
+
+# Transform the data
+data2 <- transformData(data2, 2015)
+data1 <- transformData(data1, 2010)
+data3 <- transformData(data3, 2021)
+head(data1)
+head(data2)
+head(data3)
+
+# Merge the files based on the city code and city name
+data <- merge(data1, data2, by = c("Code Commune", "Nom Commune"), all = TRUE)
+data <- merge(data, data3, by = c("Code Commune", "Nom Commune"), all = TRUE)
+
+head(data)
+
+# Export the data to a new .csv file
+#exportData(data)
+```
