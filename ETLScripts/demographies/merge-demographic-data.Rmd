@@ -1,0 +1,98 @@
+```{r load-xlsx, echo=TRUE}
+# Charger les packages nécessaires
+library(readxl)
+library(dplyr)
+library(stringr)
+
+
+# Charger les données pour 2010
+age_2010_2012 <- read.csv("/home/hugo/helyn-data/cleanData/demographies/Age_2010_2012.csv", sep = ";", skip= 0)
+education_2010_2012 <- read.csv("/home/hugo/helyn-data/cleanData/demographies/Education_2010_2012.csv", skip= 0)
+sexe_2010_2012 <- read.csv("/home/hugo/helyn-data/cleanData/demographies/Sexe_2010_2012.csv", sep = ";", skip= 0)
+travail_2010_2012 <- read.csv("/home/hugo/helyn-data/cleanData/demographies/Travail_2010_2012.csv", skip= 0)
+
+# Charger les données pour 2013_2017
+age_2013_2017 <- read.csv("/home/hugo/helyn-data/cleanData/demographies/Age_2013_2017.csv", sep = ";", skip = 0)
+sexe_2013_2017 <- read.csv("/home/hugo/helyn-data/cleanData/demographies/Sexe_2013_2017.csv", sep = ";", skip = 0)
+travail_2013_2017 <- read.csv("/home/hugo/helyn-data/cleanData/demographies/Travail_2013_2017.csv", skip = 0)
+
+# Charger les données pour 2018_2024
+age_2018_2024 <- read.csv("/home/hugo/helyn-data/cleanData/demographies/Age_2018_2024.csv", sep = ";", skip = 0)
+education_2018_2024 <- read.csv("/home/hugo/helyn-data/cleanData/demographies/Education_2018_2024.csv", skip = 0)
+sexe_2018_2024 <- read.csv("/home/hugo/helyn-data/cleanData/demographies/Sexe_2018_2024.csv", sep = ";", skip = 0)
+travail_2018_2024 <- read.csv("/home/hugo/helyn-data/cleanData/demographies/Travail_2018_2024.csv", skip = 0)
+
+# Renommer les colonnes pour uniformiser
+colnames(age_2010_2012) <- str_replace_all(colnames(age_2010_2012), c("Code.Commune" = "Code_Insee", "Nom.Commune" = "Libelle"))
+colnames(sexe_2010_2012) <- str_replace_all(colnames(sexe_2010_2012), c("Code.Commune" = "Code_Insee", "Nom.Commune" = "Libelle"))
+
+# Renommer les colonnes pour uniformiser
+colnames(age_2013_2017) <- str_replace_all(colnames(age_2013_2017), c("Code.Commune" = "Code_Insee", "Nom.Commune" = "Libelle"))
+colnames(sexe_2013_2017) <- str_replace_all(colnames(sexe_2013_2017), c("Code.Commune" = "Code_Insee", "Nom.Commune" = "Libelle"))
+
+# Renommer les colonnes pour uniformiser
+colnames(age_2018_2024) <- str_replace_all(colnames(age_2018_2024), c("Code.Commune" = "Code_Insee", "Nom.Commune" = "Libelle"))
+colnames(sexe_2018_2024) <- str_replace_all(colnames(sexe_2018_2024), c("Code.Commune" = "Code_Insee", "Nom.Commune" = "Libelle"))
+```
+
+```{r merge-data}
+# Charger les packages nécessaires
+library(dplyr)
+library(stringr)
+
+# Fusionner les données par rapport à Code_Insee
+merged_data_2010_2012 <- age_2010_2012 %>%
+  inner_join(education_2013_2017, by = "Code_Insee") %>%
+  inner_join(sexe_2010_2012, by = "Code_Insee") %>%
+  inner_join(travail_2010_2012, by = "Code_Insee")
+
+# Renommer les colonnes pour remplacer les points par des underscores
+colnames(merged_data_2010_2012) <- gsub("\\.", "_", colnames(merged_data))
+
+# Afficher les nouvelles colonnes pour vérification
+cat("Nouvelles colonnes après remplacement des points par des underscores :\n")
+colnames(merged_data_2010_2012)
+
+# Fusionner les données pour 2013_2017
+merged_data_2013_2017 <- age_2013_2017 %>%
+  inner_join(sexe_2013_2017, by = "Code_Insee") %>%
+  inner_join(travail_2013_2017, by = "Code_Insee")
+
+# Renommer les colonnes pour remplacer les points par des underscores
+colnames(merged_data_2013_2017) <- gsub("\\.", "_", colnames(merged_data_2013_2017))
+
+# Afficher un aperçu
+cat("\nColonnes après fusion et renaming pour 2013_2017 :\n")
+colnames(merged_data_2013_2017)
+head(merged_data_2013_2017)
+
+# Fusionner les données pour 2018_2024
+merged_data_2018_2024 <- age_2018_2024 %>%
+  inner_join(education_2018_2024, by = "Code_Insee") %>%
+  inner_join(sexe_2018_2024, by = "Code_Insee") %>%
+  inner_join(travail_2018_2024, by = "Code_Insee")
+
+# Renommer les colonnes pour remplacer les points par des underscores
+colnames(merged_data_2018_2024) <- gsub("\\.", "_", colnames(merged_data_2018_2024))
+
+# Afficher un aperçu
+cat("\nColonnes après fusion et renaming pour 2018_2024 :\n")
+colnames(merged_data_2018_2024)
+head(merged_data_2018_2024)
+```
+
+
+```{r save-data}
+output_dir <- "/home/hugo/helyn-data/cleanData/demographies"
+if (!dir.exists(output_dir)) {
+  dir.create(output_dir, recursive = TRUE)
+}
+
+# Sauvegarder les données fusionnées
+write.csv(merged_data_2010_2012, file.path(output_dir, "Merged_Demographies_2010_2012.csv"), row.names = FALSE)
+write.csv(merged_data_2013_2017, file.path(output_dir, "Merged_Demographies_2013_2017.csv"), row.names = FALSE)
+write.csv(merged_data_2018_2024, file.path(output_dir, "Merged_Demographies_2018_2024.csv"), row.names = FALSE)
+
+# Message de confirmation
+cat("Les données fusionnées ont été enregistrées dans : ", output_dir, "\n")
+```

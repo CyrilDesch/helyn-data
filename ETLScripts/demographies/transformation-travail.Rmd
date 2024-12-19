@@ -14,192 +14,71 @@ data2021 <- read.csv("/home/hugo/helyn-data/rawData/demographies/MarcheTravail_E
 colnames(data2010) <- c(
   "Code_Insee",
   "Libelle",
-  "Nb_emplois_LT_2010",
-  "Taux_activite_2010",
-  "Part_emplois_salaries_2010",
-  "Part_agriculteurs_2010",
-  "Part_emplois_non_salaries_2010",
-  "Part_artisans_2010",
-  "Part_commercants_2010",
-  "Part_chefs_entreprise_2010",
-  "Part_cadres_2010",
-  "Part_prof_intermediaires_2010",
-  "Part_employes_2010",
-  "Part_ouvriers_2010"
+  "Nb_emplois_LT",
+  "Taux_activite",
+  "Part_emplois_salaries",
+  "Part_agriculteurs",
+  "Part_emplois_non_salaries",
+  "Part_artisans",
+  "Part_commercants",
+  "Part_chefs_entreprise",
+  "Part_cadres",
+  "Part_prof_intermediaires",
+  "Part_employes",
+  "Part_ouvriers"
 )
 
 # Renommer les colonnes pour 2015
 colnames(data2015) <- c(
   "Code_Insee",
   "Libelle",
-  "Nb_emplois_LT_2015",
-  "Taux_activite_2015",
-  "Part_emplois_salaries_2015",
-  "Part_emplois_non_salaries_2015",
-  "Part_agriculteurs_2015",
-  "Part_artisans_2015",
-  "Part_commercants_2015",
-  "Part_chefs_entreprise_2015",
-  "Part_cadres_2015",
-  "Part_prof_intermediaires_2015",
-  "Part_employes_2015",
-  "Part_ouvriers_2015"
+  "Nb_emplois_LT",
+  "Taux_activite",
+  "Part_emplois_salaries",
+  "Part_emplois_non_salaries",
+  "Part_agriculteurs",
+  "Part_artisans",
+  "Part_commercants",
+  "Part_chefs_entreprise",
+  "Part_cadres",
+  "Part_prof_intermediaires",
+  "Part_employes",
+  "Part_ouvriers"
 )
 
 # Renommer les colonnes pour 2021
 colnames(data2021) <- c(
   "Code_Insee",
   "Libelle",
-  "Nb_emplois_LT_2021",
-  "Taux_activite_2021",
-  "Part_emplois_salaries_2021",
-  "Part_emplois_non_salaries_2021",
-  "Part_agriculteurs_2021",
-  "Part_artisans_2021",
-  "Part_commercants_2021",
-  "Part_chefs_entreprise_2021",
-  "Part_cadres_2021",
-  "Part_prof_intermediaires_2021",
-  "Part_employes_2021",
-  "Part_ouvriers_2021"
+  "Nb_emplois_LT",
+  "Taux_activite",
+  "Part_emplois_salaries",
+  "Part_emplois_non_salaries",
+  "Part_agriculteurs",
+  "Part_artisans",
+  "Part_commercants",
+  "Part_chefs_entreprise",
+  "Part_cadres",
+  "Part_prof_intermediaires",
+  "Part_employes",
+  "Part_ouvriers"
 )
 ```
 
-```{r harmonize-columns, echo=TRUE}
-# Harmoniser les colonnes pour 2010
-data2010 <- data2010 %>%
-  mutate(
-    TrancheAnnee = "[2010-2012]",
-    Nb_emplois_LT = Nb_emplois_LT_2010,
-    Taux_activite = Taux_activite_2010,
-    Part_emplois_salaries = Part_emplois_salaries_2010,
-    Part_emplois_non_salaries = Part_emplois_non_salaries_2010,
-    Part_agriculteurs = Part_agriculteurs_2010,
-    Part_artisans = Part_artisans_2010,
-    Part_commercants = Part_commercants_2010,
-    Part_chefs_entreprise = Part_chefs_entreprise_2010,
-    Part_cadres = Part_cadres_2010,
-    Part_prof_intermediaires = Part_prof_intermediaires_2010,
-    Part_employes = Part_employes_2010,
-    Part_ouvriers = Part_ouvriers_2010
-  ) %>%
-  select(Code_Insee, Libelle, TrancheAnnee, Taux_activite, Part_emplois_salaries, Part_emplois_non_salaries, Part_agriculteurs, Part_artisans, Part_commercants, Part_chefs_entreprise, Part_cadres, Part_prof_intermediaires, Part_employes, Part_ouvriers)
-
-# Harmoniser les colonnes pour 2015
-data2015 <- data2015 %>%
-  mutate(
-    TrancheAnnee = "[2013-2017]",
-    Nb_emplois_LT = Nb_emplois_LT_2015,
-    Taux_activite = Taux_activite_2015,
-    Part_emplois_salaries = Part_emplois_salaries_2015,
-    Part_emplois_non_salaries = Part_emplois_non_salaries_2015,
-    Part_agriculteurs = Part_agriculteurs_2015,
-    Part_artisans = Part_artisans_2015,
-    Part_commercants = Part_commercants_2015,
-    Part_chefs_entreprise = Part_chefs_entreprise_2015,
-    Part_cadres = Part_cadres_2015,
-    Part_prof_intermediaires = Part_prof_intermediaires_2015,
-    Part_employes = Part_employes_2015,
-    Part_ouvriers = Part_ouvriers_2015
-  ) %>%
-  select(Code_Insee, Libelle, TrancheAnnee, Taux_activite, Part_emplois_salaries, Part_emplois_non_salaries, Part_agriculteurs, Part_artisans, Part_commercants, Part_chefs_entreprise, Part_cadres, Part_prof_intermediaires, Part_employes, Part_ouvriers)
-
-# Harmoniser les colonnes pour 2021
-data2021 <- data2021 %>%
-  mutate(
-    TrancheAnnee = "[2018-2024]",
-    Nb_emplois_LT = Nb_emplois_LT_2021,
-    Taux_activite = Taux_activite_2021,
-    Part_emplois_salaries = Part_emplois_salaries_2021,
-    Part_emplois_non_salaries = Part_emplois_non_salaries_2021,
-    Part_agriculteurs = Part_agriculteurs_2021,
-    Part_artisans = Part_artisans_2021,
-    Part_commercants = Part_commercants_2021,
-    Part_chefs_entreprise = Part_chefs_entreprise_2021,
-    Part_cadres = Part_cadres_2021,
-    Part_prof_intermediaires = Part_prof_intermediaires_2021,
-    Part_employes = Part_employes_2021,
-    Part_ouvriers = Part_ouvriers_2021
-  ) %>%
-  select(Code_Insee, Libelle, TrancheAnnee, Taux_activite, Part_emplois_salaries, Part_emplois_non_salaries, Part_agriculteurs, Part_artisans, Part_commercants, Part_chefs_entreprise, Part_cadres, Part_prof_intermediaires, Part_employes, Part_ouvriers)
-
-colnames(data2010)
-colnames(data2015)
-colnames(data2021)
-```
-
-```{r merge-data, echo=TRUE}
-# Fusionner les trois jeux de données
-merged_data <- bind_rows(data2010, data2015, data2021)
-
-# Trier les données par Code Insee et TrancheAnnee
-merged_data <- merged_data %>%
-  arrange(Code_Insee, TrancheAnnee)
-
-# Vérifier un aperçu des données fusionnées
-str(merged_data)
-head(merged_data)
-```
-
-```{r filter-data, echo=TRUE}
-# Charger les packages nécessaires
-library(dplyr)
-library(stringr)
-
-# Convertir les colonnes en format numérique
-merged_data <- merged_data %>%
-  mutate(
-    Taux_activite = as.numeric(Taux_activite),
-    Part_emplois_salaries = as.numeric(Part_emplois_salaries),
-    Part_emplois_non_salaries = as.numeric(Part_emplois_non_salaries),
-    Part_agriculteurs = as.numeric(Part_agriculteurs),
-    Part_artisans = as.numeric(Part_artisans),
-    Part_commercants = as.numeric(Part_commercants),
-    Part_chefs_entreprise = as.numeric(Part_chefs_entreprise),
-    Part_cadres = as.numeric(Part_cadres),
-    Part_prof_intermediaires = as.numeric(Part_prof_intermediaires),
-    Part_employes = as.numeric(Part_employes),
-    Part_ouvriers = as.numeric(Part_ouvriers)
-  ) %>%
-  # Filtrer les données incohérentes
-  filter(
-    # Vérifier les pourcentages entre 0 et 100
-    Taux_activite >= 0 & Taux_activite <= 100,
-    Part_emplois_salaries >= 0 & Part_emplois_salaries <= 100,
-    Part_emplois_non_salaries >= 0 & Part_emplois_non_salaries <= 100,
-    Part_agriculteurs >= 0 & Part_agriculteurs <= 100,
-    Part_artisans >= 0 & Part_artisans <= 100,
-    Part_commercants >= 0 & Part_commercants <= 100,
-    Part_chefs_entreprise >= 0 & Part_chefs_entreprise <= 100,
-    Part_cadres >= 0 & Part_cadres <= 100,
-    Part_prof_intermediaires >= 0 & Part_prof_intermediaires <= 100,
-    Part_employes >= 0 & Part_employes <= 100,
-    Part_ouvriers >= 0 & Part_ouvriers <= 100
-  ) %>%
-  # Supprimer les lignes avec des NA critiques
-  filter(!is.na(Code_Insee), !is.na(Libelle)) %>%
-  # Supprimer les doublons
-  distinct(Code_Insee, TrancheAnnee, .keep_all = TRUE) %>%
-  # Filtrer les codes INSEE non valides
-  filter(str_detect(Code_Insee, "^[0-9]{5}$"))
-
-# Vérifier un aperçu après le filtrage
-str(merged_data)
-head(merged_data)
-```
-
-```{r save-merged-data, echo=TRUE}
+```{r}
 # Chemin du dossier de destination
-output_dir <- "/home/hugo/helyn-data/CleanData/demographies"
+output_dir <- "/home/hugo/helyn-data/cleanData/demographies"
 
 # Créer le dossier si nécessaire
 if (!dir.exists(output_dir)) {
   dir.create(output_dir, recursive = TRUE)
 }
 
-# Sauvegarder le fichier fusionné
-write.csv(merged_data, file.path(output_dir, "MarcheTravail_clean.csv"), row.names = FALSE)
+# Sauvegarder les fichiers séparés
+write.csv(data2010, file.path(output_dir, "Travail_2010_2012.csv"), row.names = FALSE)
+write.csv(data2015, file.path(output_dir, "Travail_2013_2017.csv"), row.names = FALSE)
+write.csv(data2021, file.path(output_dir, "Travail_2018_2024.csv"), row.names = FALSE)
 
 # Message de confirmation
-cat("Le fichier fusionné a été enregistré dans : ", output_dir, "\n")
+cat("Les fichiers séparés ont été enregistrés dans : ", output_dir, "\n")
 ```
