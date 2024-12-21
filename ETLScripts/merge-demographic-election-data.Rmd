@@ -155,3 +155,20 @@ head(result_2013_2017)
 cat("\nAperçu de result_2018_2024 après multiplication :\n")
 head(result_2018_2024)
 ```
+
+```{r save-data}
+# Définir le répertoire de sauvegarde
+output_dir <- "/home/hugo/helyn-data/cleanData/demographies"
+
+# Vérifier si le répertoire existe, sinon le créer
+if (!dir.exists(output_dir)) {
+  dir.create(output_dir, recursive = TRUE)
+}
+
+# Sauvegarder chaque dataset dans un fichier CSV
+write.csv(result_2010_2012, file.path(output_dir, "merge_data_2010_2012.csv"), row.names = FALSE)
+write.csv(result_2013_2017, file.path(output_dir, "merge_data_2013_2017.csv"), row.names = FALSE)
+write.csv(result_2018_2024, file.path(output_dir, "merge_data_2018_2024.csv"), row.names = FALSE)
+
+# Confirmation dans la console
+cat("Les fichiers CSV ont été sauvegardés dans :", output_dir, "\n")
