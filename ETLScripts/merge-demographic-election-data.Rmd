@@ -157,31 +157,6 @@ head(result_2018_2024)
 ```
 
 ```{r save-data}
-# Fonction pour arrondir certaines colonnes numériques et sauvegarder
-arrondir_et_sauvegarder <- function(data, colonnes, filepath) {
-  # Vérifier si le dataframe contient des colonnes
-  if (ncol(data) == 0) {
-    stop("Le dataframe est vide.")
-  }
-  
-  # Vérifier que les colonnes spécifiées existent
-  colonnes_existantes <- intersect(colonnes, colnames(data))
-  if (length(colonnes_existantes) == 0) {
-    stop("Aucune des colonnes spécifiées n'existe dans le dataframe.")
-  }
-  
-  # Arrondir les colonnes spécifiées
-  data[, colonnes_existantes] <- lapply(data[, colonnes_existantes, drop = FALSE], round)
-  
-  # Sauvegarder dans un fichier CSV
-  write.csv(data, filepath, row.names = FALSE)
-  
-  cat("Fichier sauvegardé :", filepath, "\n")
-}
-
-# Liste des colonnes à arrondir
-colonnes_a_multiplier <- c("Nb_25", "Nb_65", "Part_cadres")
-
 # Définir le répertoire de sauvegarde
 output_dir <- "/home/hugo/helyn-data/cleanData/demographies"
 
@@ -190,18 +165,11 @@ if (!dir.exists(output_dir)) {
   dir.create(output_dir, recursive = TRUE)
 }
 
-# Sauvegarder les datasets avec arrondi
-arrondir_et_sauvegarder(result_2010_2012, colonnes_a_multiplier, file.path(output_dir, "result_2010_2012.csv"))
-arrondir_et_sauvegarder(result_2013_2017, colonnes_a_multiplier, file.path(output_dir, "result_2013_2017.csv"))
-arrondir_et_sauvegarder(result_2018_2024, colonnes_a_multiplier, file.path(output_dir, "result_2018_2024.csv"))
+# Sauvegarder chaque dataset dans un fichier CSV
+write.csv(result_2010_2012, file.path(output_dir, "merge_data_2010_2012.csv"), row.names = FALSE)
+write.csv(result_2013_2017, file.path(output_dir, "merge_data_2013_2017.csv"), row.names = FALSE)
+write.csv(result_2018_2024, file.path(output_dir, "merge_data_2018_2024.csv"), row.names = FALSE)
 
-# Afficher un aperçu final
-cat("\nAperçu de result_2010_2012 final :\n")
-head(result_2010_2012)
-
-cat("\nAperçu de result_2013_2017 final :\n")
-head(result_2013_2017)
-
-cat("\nAperçu de result_2018_2024 final :\n")
-head(result_2018_2024)
+# Confirmation dans la console
+cat("Les fichiers CSV ont été sauvegardés dans :", output_dir, "\n")
 ```
