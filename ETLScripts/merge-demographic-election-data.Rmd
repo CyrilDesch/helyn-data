@@ -116,3 +116,42 @@ head(result_2010_2012)
 head(result_2013_2017)
 head(result_2018_2024)
 ```
+
+```{r split-data}
+# Liste des colonnes à multiplier
+colonnes_a_multiplier <- c("Nb_25","Nb_25_64", "Nb_65", "Nb_non_scolarises","Nb_H_total","Nb_F_total","Nb_H_15_24","Nb_H_25_64","Nb_H_65","Nb_F_15_24","Nb_F_25_64","Nb_F_65","Population_Totale","Nb_emplois_LT")
+
+# Fonction pour multiplier chaque colonne de la liste par "ratiopopulation"
+appliquer_ratio <- function(data, colonnes, colonne_ratio) {
+  # Vérifier que toutes les colonnes existent
+  colonnes_existantes <- intersect(colonnes, colnames(data))
+  if (length(colonnes_existantes) == 0) {
+    stop("Aucune des colonnes spécifiées n'existe dans le dataframe.")
+  }
+  
+  # Vérifier que la colonne de ratio existe
+  if (!(colonne_ratio %in% colnames(data))) {
+    stop("La colonne de ratio spécifiée n'existe pas dans le dataframe.")
+  }
+  
+  # Appliquer la multiplication
+  data[, colonnes_existantes] <- data[, colonnes_existantes] * data[[colonne_ratio]]
+  
+  return(data)
+}
+
+# Appliquer la fonction aux datasets
+result_2010_2012 <- appliquer_ratio(result_2010_2012, colonnes_a_multiplier, "PopulationRatio")
+result_2013_2017 <- appliquer_ratio(result_2013_2017, colonnes_a_multiplier, "PopulationRatio")
+result_2018_2024 <- appliquer_ratio(result_2018_2024, colonnes_a_multiplier, "PopulationRatio")
+
+# Afficher un aperçu après application
+cat("\nAperçu de result_2010_2012 après multiplication :\n")
+head(result_2010_2012)
+
+cat("\nAperçu de result_2013_2017 après multiplication :\n")
+head(result_2013_2017)
+
+cat("\nAperçu de result_2018_2024 après multiplication :\n")
+head(result_2018_2024)
+```
