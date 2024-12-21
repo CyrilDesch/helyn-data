@@ -158,7 +158,7 @@ head(result_2018_2024)
 
 ```{r save-data}
 # Définir le répertoire de sauvegarde
-output_dir <- "/home/hugo/helyn-data/cleanData/demographies"
+output_dir <- "/home/hugo/helyn-data/cleanData/"
 
 # Vérifier si le répertoire existe, sinon le créer
 if (!dir.exists(output_dir)) {
