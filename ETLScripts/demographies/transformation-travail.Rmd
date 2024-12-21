@@ -66,6 +66,19 @@ colnames(data2021) <- c(
 ```
 
 ```{r}
+format_code_insee <- function(code) {
+  if (nchar(code) == 4) {
+    return(paste0("0", code)) 
+  }
+  return(code)
+}
+
+data2010$Code_Insee <- sapply(data2010$Code_Insee, format_code_insee)
+data2015$Code_Insee <- sapply(data2015$Code_Insee, format_code_insee)
+data2021$Code_Insee <- sapply(data2021$Code_Insee, format_code_insee)
+```
+
+```{r}
 # Chemin du dossier de destination
 output_dir <- "/home/hugo/helyn-data/cleanData/demographies"
 

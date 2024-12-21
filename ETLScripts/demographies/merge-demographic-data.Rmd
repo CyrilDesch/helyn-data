@@ -42,45 +42,83 @@ library(stringr)
 
 # Fusionner les données par rapport à Code_Insee
 merged_data_2010_2012 <- age_2010_2012 %>%
-  inner_join(education_2013_2017, by = "Code_Insee") %>%
+  inner_join(education_2010_2012, by = "Code_Insee") %>%
   inner_join(sexe_2010_2012, by = "Code_Insee") %>%
   inner_join(travail_2010_2012, by = "Code_Insee")
-
-# Renommer les colonnes pour remplacer les points par des underscores
-colnames(merged_data_2010_2012) <- gsub("\\.", "_", colnames(merged_data))
-
-# Afficher les nouvelles colonnes pour vérification
-cat("Nouvelles colonnes après remplacement des points par des underscores :\n")
-colnames(merged_data_2010_2012)
 
 # Fusionner les données pour 2013_2017
 merged_data_2013_2017 <- age_2013_2017 %>%
   inner_join(sexe_2013_2017, by = "Code_Insee") %>%
   inner_join(travail_2013_2017, by = "Code_Insee")
 
-# Renommer les colonnes pour remplacer les points par des underscores
-colnames(merged_data_2013_2017) <- gsub("\\.", "_", colnames(merged_data_2013_2017))
-
-# Afficher un aperçu
-cat("\nColonnes après fusion et renaming pour 2013_2017 :\n")
-colnames(merged_data_2013_2017)
-head(merged_data_2013_2017)
-
 # Fusionner les données pour 2018_2024
 merged_data_2018_2024 <- age_2018_2024 %>%
   inner_join(education_2018_2024, by = "Code_Insee") %>%
   inner_join(sexe_2018_2024, by = "Code_Insee") %>%
   inner_join(travail_2018_2024, by = "Code_Insee")
-
-# Renommer les colonnes pour remplacer les points par des underscores
-colnames(merged_data_2018_2024) <- gsub("\\.", "_", colnames(merged_data_2018_2024))
-
-# Afficher un aperçu
-cat("\nColonnes après fusion et renaming pour 2018_2024 :\n")
-colnames(merged_data_2018_2024)
-head(merged_data_2018_2024)
 ```
 
+```{r refactor-data}
+# Fonction pour renommer et uniformiser les colonnes
+uniformiser_colonnes <- function(data) {
+  if (is.null(data) || ncol(data) == 0) {
+    stop("Le dataframe fourni est vide ou invalide.")
+  }
+  
+  cat("\nColonnes avant traitement :\n")
+  print(colnames(data))
+  
+  # Remplacer les points par des underscores
+  colnames(data) <- gsub("\\.", "_", colnames(data))
+  
+  # Supprimer les underscores multiples ou finaux
+  colnames(data) <- gsub("_+", "_", colnames(data))
+  colnames(data) <- gsub("_$", "", colnames(data))
+  
+  cat("\nColonnes après traitement :\n")
+  print(colnames(data))
+  
+  return(data)
+}
+
+# Appliquer la fonction aux datasets
+merged_data_2010_2012 <- tryCatch({
+  uniformiser_colonnes(merged_data_2010_2012)
+}, error = function(e) {
+  cat("Erreur lors du traitement de merged_data_2010_2012 :", e$message, "\n")
+  NULL
+})
+
+merged_data_2013_2017 <- tryCatch({
+  uniformiser_colonnes(merged_data_2013_2017)
+}, error = function(e) {
+  cat("Erreur lors du traitement de merged_data_2013_2017 :", e$message, "\n")
+  NULL
+})
+
+merged_data_2018_2024 <- tryCatch({
+  uniformiser_colonnes(merged_data_2018_2024)
+}, error = function(e) {
+  cat("Erreur lors du traitement de merged_data_2018_2024 :", e$message, "\n")
+  NULL
+})
+```
+
+```{r delete-libelle}
+merged_data_2010_2012 <- merged_data_2010_2012 %>% select(-c(Libelle_y, Libelle_y_y, Libelle_x_x))
+merged_data_2013_2017 <- merged_data_2013_2017 %>% select(-c(Libelle_y, Libelle))
+merged_data_2018_2024 <- merged_data_2018_2024 %>% select(-c(Libelle_y, Libelle_y_y, Libelle_x_x))
+
+colnames(merged_data_2010_2012)[colnames(merged_data_2010_2012) == "Libelle_x"] <- "Libelle"
+colnames(merged_data_2013_2017)[colnames(merged_data_2013_2017) == "Libelle_x"] <- "Libelle"
+colnames(merged_data_2018_2024)[colnames(merged_data_2018_2024) == "Libelle_x"] <- "Libelle"
+
+  cat("\nColonnes après traitement :\n")
+  print(colnames(merged_data_2010_2012))
+  print(colnames(merged_data_2013_2017))
+  print(colnames(merged_data_2018_2024))
+
+```
 
 ```{r save-data}
 output_dir <- "/home/hugo/helyn-data/cleanData/demographies"

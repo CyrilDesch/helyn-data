@@ -1,0 +1,118 @@
+```{r load-data}
+# Charger les packages nécessaires
+library(readxl)
+library(dplyr)
+library(stringr)
+
+# Charger les données pour 2010
+demographic_2010_2012 <- read.csv("/home/hugo/helyn-data/cleanData/demographies/Merged_Demographies_2010_2012.csv", skip= 0)
+election_2010_2012 <- read_excel("/home/hugo/helyn-data/cleanData/elections/resultats-burvot-t1-presidentielle_2012.xlsx", skip= 0)
+
+# Charger les données pour 2010
+demographic_2013_2017 <- read.csv("/home/hugo/helyn-data/cleanData/demographies/Merged_Demographies_2013_2017.csv", skip= 0)
+election_2013_2017 <- read_excel("/home/hugo/helyn-data/cleanData/elections/resultats-burvot-t1-presidentielle_2017.xlsx", skip= 0)
+
+# Charger les données pour 2010
+demographic_2018_2024 <- read.csv("/home/hugo/helyn-data/cleanData/demographies/Merged_Demographies_2018_2024.csv", skip= 0)
+election_2018_2024 <- read_excel("/home/hugo/helyn-data/cleanData/elections/resultats-burvot-t1-presidentielle_2022.xlsx", skip= 0)
+```
+
+```{r add-%}
+# Pour election_2010_2012
+# Suppression de la colonne "Annee"
+election_2010_2012 <- election_2010_2012[, -which(colnames(election_2010_2012) == "Annee")]
+
+# Extraction des 5 premiers chiffres de "Code" et renommage en "Code_Insee"
+election_2010_2012$Code_Insee <- substr(election_2010_2012$Code, 1, 5)
+
+# Calcul du total de la population pour chaque groupe de Code_Insee
+election_2010_2012 <- election_2010_2012 %>%
+  group_by(Code_Insee) %>%
+  mutate(TotalPopulationGroup = sum(Votants, na.rm = TRUE)) %>%
+  ungroup()
+
+# Calcul du ratio de la population
+election_2010_2012 <- election_2010_2012 %>%
+  mutate(PopulationRatio = Votants / TotalPopulationGroup)
+
+# Suppression de la colonne "TotalPopulationGroup" si non nécessaire
+election_2010_2012 <- election_2010_2012 %>%
+  select(-TotalPopulationGroup)
+
+# Afficher un aperçu du résultat
+head(election_2010_2012)
+
+# Pour election_2013_2017
+# Suppression de la colonne "Annee"
+election_2013_2017 <- election_2013_2017[, -which(colnames(election_2013_2017) == "Annee")]
+
+# Extraction des 5 premiers chiffres de "Code" et renommage en "Code_Insee"
+election_2013_2017$Code_Insee <- substr(election_2013_2017$Code, 1, 5)
+
+# Calcul du total de la population pour chaque groupe de Code_Insee
+election_2013_2017 <- election_2013_2017 %>%
+  group_by(Code_Insee) %>%
+  mutate(TotalPopulationGroup = sum(Votants, na.rm = TRUE)) %>%
+  ungroup()
+
+# Calcul du ratio de la population
+election_2013_2017 <- election_2013_2017 %>%
+  mutate(PopulationRatio = Votants / TotalPopulationGroup)
+
+# Suppression de la colonne "TotalPopulationGroup" si non nécessaire
+election_2013_2017 <- election_2013_2017 %>%
+  select(-TotalPopulationGroup)
+
+# Afficher un aperçu du résultat
+head(election_2013_2017)
+
+# Pour election_2018_2024
+# Suppression de la colonne "Annee"
+election_2018_2024 <- election_2018_2024[, -which(colnames(election_2018_2024) == "Annee")]
+
+# Extraction des 5 premiers chiffres de "Code" et renommage en "Code_Insee"
+election_2018_2024$Code_Insee <- substr(election_2018_2024$Code, 1, 5)
+
+# Calcul du total de la population pour chaque groupe de Code_Insee
+election_2018_2024 <- election_2018_2024 %>%
+  group_by(Code_Insee) %>%
+  mutate(TotalPopulationGroup = sum(Votants, na.rm = TRUE)) %>%
+  ungroup()
+
+# Calcul du ratio de la population
+election_2018_2024 <- election_2018_2024 %>%
+  mutate(PopulationRatio = Votants / TotalPopulationGroup)
+
+# Suppression de la colonne "TotalPopulationGroup" si non nécessaire
+election_2018_2024 <- election_2018_2024 %>%
+  select(-TotalPopulationGroup)
+```
+
+```{r join-data}
+# Jointure gauche (left join) sur Code_Insee
+result_2010_2012 <- election_2010_2012 %>%
+  left_join(demographic_2010_2012, by = c("Code_Insee"))
+
+# Préparer les données pour 2013-2017
+election_2013_2017 <- election_2013_2017 %>%
+  mutate(Code_Insee = substr(Code, 1, 5))
+
+result_2013_2017 <- election_2013_2017 %>%
+  left_join(demographic_2013_2017, by = c("Code_Insee"))
+
+# Préparer les données pour 2018-2024
+election_2018_2024 <- election_2018_2024 %>%
+  mutate(Code_Insee = substr(Code, 1, 5))
+
+result_2018_2024 <- election_2018_2024 %>%
+  left_join(demographic_2018_2024, by = c("Code_Insee"))
+
+result_2010_2012 <- result_2010_2012 %>% select(-c("Libellé de la commune"))
+result_2013_2017 <- result_2013_2017 %>% select(-c("Libellé de la commune"))
+result_2018_2024 <- result_2018_2024 %>% select(-c("Libellé de la commune"))
+
+# Afficher un aperçu des résultats pour chaque période
+head(result_2010_2012)
+head(result_2013_2017)
+head(result_2018_2024)
+```
