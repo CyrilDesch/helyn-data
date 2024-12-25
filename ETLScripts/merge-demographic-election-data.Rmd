@@ -39,8 +39,7 @@ election_2010_2012 <- election_2010_2012 %>%
 election_2010_2012 <- election_2010_2012 %>%
   select(-TotalPopulationGroup)
 
-# Afficher un aperçu du résultat
-head(election_2010_2012)
+
 
 # Pour election_2013_2017
 # Suppression de la colonne "Annee"
@@ -63,8 +62,7 @@ election_2013_2017 <- election_2013_2017 %>%
 election_2013_2017 <- election_2013_2017 %>%
   select(-TotalPopulationGroup)
 
-# Afficher un aperçu du résultat
-head(election_2013_2017)
+
 
 # Pour election_2018_2024
 # Suppression de la colonne "Annee"
@@ -115,6 +113,67 @@ result_2018_2024 <- result_2018_2024 %>% select(-c("Libellé de la commune"))
 head(result_2010_2012)
 head(result_2013_2017)
 head(result_2018_2024)
+```
+
+```{r colomn-type}
+# Liste des colonnes à convertir
+colonnes_a_convertir <- c(
+  "Taux_activite", "Part_emplois_salaries", "Part_emplois_non_salaries", 
+  "Part_agriculteurs", "Part_artisans", "Part_commercants", 
+  "Part_chefs_entreprise", "Part_cadres", "Part_prof_intermediaires", 
+  "Part_employes", "Part_ouvriers"
+)
+
+# Fonction pour identifier les problèmes dans les colonnes spécifiées
+identifier_problemes <- function(data, colonnes) {
+  for (col in colonnes) {
+    if (col %in% colnames(data)) {
+      # Identifier les valeurs non numériques ou invalides
+      non_numeriques <- data[[col]][!is.na(data[[col]]) & is.na(suppressWarnings(as.numeric(data[[col]])))]
+      if (length(non_numeriques) > 0) {
+        cat(paste0("Problèmes dans la colonne : ", col, "\n"))
+        print(unique(non_numeriques[1:10])) # Afficher les 10 premières valeurs problématiques
+      }
+    }
+  }
+}
+
+# Fonction pour nettoyer et convertir les colonnes en double
+convertir_en_double <- function(data, colonnes) {
+  for (col in colonnes) {
+    if (col %in% colnames(data)) {
+      data[[col]] <- gsub(",", ".", data[[col]])  # Remplacer les virgules par des points
+      data[[col]] <- gsub("[^0-9\\.]", "", data[[col]])  # Supprimer tout sauf chiffres et points
+      data[[col]] <- suppressWarnings(as.numeric(data[[col]]))  # Convertir en numérique
+    }
+  }
+  return(data)
+}
+
+# Vérifier les données problématiques avant conversion
+cat("\nProblèmes dans result_2010_2012 :\n")
+identifier_problemes(result_2010_2012, colonnes_a_convertir)
+
+cat("\nProblèmes dans result_2013_2017 :\n")
+identifier_problemes(result_2013_2017, colonnes_a_convertir)
+
+cat("\nProblèmes dans result_2018_2024 :\n")
+identifier_problemes(result_2018_2024, colonnes_a_convertir)
+
+# Nettoyer et convertir les colonnes
+result_2010_2012 <- convertir_en_double(result_2010_2012, colonnes_a_convertir)
+result_2013_2017 <- convertir_en_double(result_2013_2017, colonnes_a_convertir)
+result_2018_2024 <- convertir_en_double(result_2018_2024, colonnes_a_convertir)
+
+# Vérifier les résultats après conversion
+cat("\nAperçu de result_2010_2012 après conversion :\n")
+str(result_2010_2012)
+
+cat("\nAperçu de result_2013_2017 après conversion :\n")
+str(result_2013_2017)
+
+cat("\nAperçu de result_2018_2024 après conversion :\n")
+str(result_2018_2024)
 ```
 
 ```{r split-data}
@@ -172,4 +231,22 @@ write.csv(result_2018_2024, file.path(output_dir, "merge_data_2018_2024.csv"), r
 
 # Confirmation dans la console
 cat("Les fichiers CSV ont été sauvegardés dans :", output_dir, "\n")
+```
+
+```{r merge-data-in-one}
+# Ajouter une colonne "annees" à chaque dataset
+result_2010_2012$Annees <- '2010-2012'
+result_2013_2017$Annees <- '2013-2017'
+result_2018_2024$Annees <- '2018-2024'
+
+# Fusionner les datasets
+merged_results <- bind_rows(result_2010_2012, result_2013_2017, result_2018_2024)
+
+# Afficher un aperçu du résultat fusionné
+head(merged_results)
+
+# Sauvegarder le dataset fusionné
+write.csv(merged_results, "/home/hugo/helyn-data/cleanData/merged_data_all_years.csv", row.names = FALSE)
+
+cat("Le fichier fusionné a été sauvegardé dans : /home/hugo/helyn-data/cleanData/merged_data_all_years.csv\n")
 ```
