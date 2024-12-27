@@ -3,6 +3,10 @@
 library(readxl)
 library(dplyr)
 library(stringr)
+library(here)
+
+# Répertoire de données relatives
+output_dir <- here("cleanData/demographies")
 
 
 # Charger les données pour 2010
@@ -121,7 +125,6 @@ colnames(merged_data_2018_2024)[colnames(merged_data_2018_2024) == "Libelle_x"] 
 ```
 
 ```{r save-data}
-output_dir <- "/home/hugo/helyn-data/cleanData/demographies"
 if (!dir.exists(output_dir)) {
   dir.create(output_dir, recursive = TRUE)
 }

@@ -3,6 +3,11 @@
 library(readxl)
 library(dplyr)
 library(stringr)
+library(here)
+
+# Répertoire de données relatives
+input_dir <- here("cleanData")
+output_dir <- here("cleanData")
 
 # Charger les données pour 2010
 demographic_2010_2012 <- read.csv("/home/hugo/helyn-data/cleanData/demographies/Merged_Demographies_2010_2012.csv", skip= 0)
@@ -216,9 +221,6 @@ head(result_2018_2024)
 ```
 
 ```{r save-data}
-# Définir le répertoire de sauvegarde
-output_dir <- "/home/hugo/helyn-data/cleanData/"
-
 # Vérifier si le répertoire existe, sinon le créer
 if (!dir.exists(output_dir)) {
   dir.create(output_dir, recursive = TRUE)
@@ -246,7 +248,7 @@ merged_results <- bind_rows(result_2010_2012, result_2013_2017, result_2018_2024
 head(merged_results)
 
 # Sauvegarder le dataset fusionné
-write.csv(merged_results, "/home/hugo/helyn-data/cleanData/merged_data_all_years.csv", row.names = FALSE)
+write.csv(merged_results, file.path(output_dir, "merge_data_all_years.csv"), row.names = FALSE)
 
-cat("Le fichier fusionné a été sauvegardé dans : /home/hugo/helyn-data/cleanData/merged_data_all_years.csv\n")
+cat("Les fichiers CSV ont été sauvegardés dans :", output_dir, "\n")
 ```
