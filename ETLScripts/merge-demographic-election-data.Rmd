@@ -1,0 +1,258 @@
+```{r load-data}
+# Charger les packages nécessaires
+library(readxl)
+library(dplyr)
+library(stringr)
+library(here)
+
+# Répertoire de données relatives
+input_dir <- here("cleanData")
+output_dir <- here("cleanData")
+
+# Définir les chemins relatifs pour les fichiers
+input_dir_demographies <- here("cleanData", "demographies")
+input_dir_elections <- here("cleanData", "elections")
+
+# Charger les données pour 2010-2012
+demographic_2010_2012 <- read.csv(file.path(input_dir_demographies, "Merged_Demographies_2010_2012.csv"), skip = 0)
+election_2010_2012 <- read_excel(file.path(input_dir_elections, "resultats-burvot-t1-presidentielle_2012.xlsx"), skip = 0)
+
+# Charger les données pour 2013-2017
+demographic_2013_2017 <- read.csv(file.path(input_dir_demographies, "Merged_Demographies_2013_2017.csv"), skip = 0)
+election_2013_2017 <- read_excel(file.path(input_dir_elections, "resultats-burvot-t1-presidentielle_2017.xlsx"), skip = 0)
+
+# Charger les données pour 2018-2024
+demographic_2018_2024 <- read.csv(file.path(input_dir_demographies, "Merged_Demographies_2018_2024.csv"), skip = 0)
+election_2018_2024 <- read_excel(file.path(input_dir_elections, "resultats-burvot-t1-presidentielle_2022.xlsx"), skip = 0)
+```
+
+```{r add-%}
+# Pour election_2010_2012
+# Suppression de la colonne "Annee"
+election_2010_2012 <- election_2010_2012[, -which(colnames(election_2010_2012) == "Annee")]
+
+# Extraction des 5 premiers chiffres de "Code" et renommage en "Code_Insee"
+election_2010_2012$Code_Insee <- substr(election_2010_2012$Code, 1, 5)
+
+# Calcul du total de la population pour chaque groupe de Code_Insee
+election_2010_2012 <- election_2010_2012 %>%
+  group_by(Code_Insee) %>%
+  mutate(TotalPopulationGroup = sum(Votants, na.rm = TRUE)) %>%
+  ungroup()
+
+# Calcul du ratio de la population
+election_2010_2012 <- election_2010_2012 %>%
+  mutate(PopulationRatio = Votants / TotalPopulationGroup)
+
+# Suppression de la colonne "TotalPopulationGroup" si non nécessaire
+election_2010_2012 <- election_2010_2012 %>%
+  select(-TotalPopulationGroup)
+
+
+
+# Pour election_2013_2017
+# Suppression de la colonne "Annee"
+election_2013_2017 <- election_2013_2017[, -which(colnames(election_2013_2017) == "Annee")]
+
+# Extraction des 5 premiers chiffres de "Code" et renommage en "Code_Insee"
+election_2013_2017$Code_Insee <- substr(election_2013_2017$Code, 1, 5)
+
+# Calcul du total de la population pour chaque groupe de Code_Insee
+election_2013_2017 <- election_2013_2017 %>%
+  group_by(Code_Insee) %>%
+  mutate(TotalPopulationGroup = sum(Votants, na.rm = TRUE)) %>%
+  ungroup()
+
+# Calcul du ratio de la population
+election_2013_2017 <- election_2013_2017 %>%
+  mutate(PopulationRatio = Votants / TotalPopulationGroup)
+
+# Suppression de la colonne "TotalPopulationGroup" si non nécessaire
+election_2013_2017 <- election_2013_2017 %>%
+  select(-TotalPopulationGroup)
+
+
+
+# Pour election_2018_2024
+# Suppression de la colonne "Annee"
+election_2018_2024 <- election_2018_2024[, -which(colnames(election_2018_2024) == "Annee")]
+
+# Extraction des 5 premiers chiffres de "Code" et renommage en "Code_Insee"
+election_2018_2024$Code_Insee <- substr(election_2018_2024$Code, 1, 5)
+
+# Calcul du total de la population pour chaque groupe de Code_Insee
+election_2018_2024 <- election_2018_2024 %>%
+  group_by(Code_Insee) %>%
+  mutate(TotalPopulationGroup = sum(Votants, na.rm = TRUE)) %>%
+  ungroup()
+
+# Calcul du ratio de la population
+election_2018_2024 <- election_2018_2024 %>%
+  mutate(PopulationRatio = Votants / TotalPopulationGroup)
+
+# Suppression de la colonne "TotalPopulationGroup" si non nécessaire
+election_2018_2024 <- election_2018_2024 %>%
+  select(-TotalPopulationGroup)
+```
+
+```{r join-data}
+# Jointure gauche (left join) sur Code_Insee
+result_2010_2012 <- election_2010_2012 %>%
+  left_join(demographic_2010_2012, by = c("Code_Insee"))
+
+# Préparer les données pour 2013-2017
+election_2013_2017 <- election_2013_2017 %>%
+  mutate(Code_Insee = substr(Code, 1, 5))
+
+result_2013_2017 <- election_2013_2017 %>%
+  left_join(demographic_2013_2017, by = c("Code_Insee"))
+
+# Préparer les données pour 2018-2024
+election_2018_2024 <- election_2018_2024 %>%
+  mutate(Code_Insee = substr(Code, 1, 5))
+
+result_2018_2024 <- election_2018_2024 %>%
+  left_join(demographic_2018_2024, by = c("Code_Insee"))
+
+result_2010_2012 <- result_2010_2012 %>% select(-c("Libellé de la commune"))
+result_2013_2017 <- result_2013_2017 %>% select(-c("Libellé de la commune"))
+result_2018_2024 <- result_2018_2024 %>% select(-c("Libellé de la commune"))
+
+# Afficher un aperçu des résultats pour chaque période
+head(result_2010_2012)
+head(result_2013_2017)
+head(result_2018_2024)
+```
+
+```{r colomn-type}
+# Liste des colonnes à convertir
+colonnes_a_convertir <- c(
+  "Taux_activite", "Part_emplois_salaries", "Part_emplois_non_salaries", 
+  "Part_agriculteurs", "Part_artisans", "Part_commercants", 
+  "Part_chefs_entreprise", "Part_cadres", "Part_prof_intermediaires", 
+  "Part_employes", "Part_ouvriers"
+)
+
+# Fonction pour identifier les problèmes dans les colonnes spécifiées
+identifier_problemes <- function(data, colonnes) {
+  for (col in colonnes) {
+    if (col %in% colnames(data)) {
+      # Identifier les valeurs non numériques ou invalides
+      non_numeriques <- data[[col]][!is.na(data[[col]]) & is.na(suppressWarnings(as.numeric(data[[col]])))]
+      if (length(non_numeriques) > 0) {
+        cat(paste0("Problèmes dans la colonne : ", col, "\n"))
+        print(unique(non_numeriques[1:10])) # Afficher les 10 premières valeurs problématiques
+      }
+    }
+  }
+}
+
+# Fonction pour nettoyer et convertir les colonnes en double
+convertir_en_double <- function(data, colonnes) {
+  for (col in colonnes) {
+    if (col %in% colnames(data)) {
+      data[[col]] <- gsub(",", ".", data[[col]])  # Remplacer les virgules par des points
+      data[[col]] <- gsub("[^0-9\\.]", "", data[[col]])  # Supprimer tout sauf chiffres et points
+      data[[col]] <- suppressWarnings(as.numeric(data[[col]]))  # Convertir en numérique
+    }
+  }
+  return(data)
+}
+
+# Vérifier les données problématiques avant conversion
+cat("\nProblèmes dans result_2010_2012 :\n")
+identifier_problemes(result_2010_2012, colonnes_a_convertir)
+
+cat("\nProblèmes dans result_2013_2017 :\n")
+identifier_problemes(result_2013_2017, colonnes_a_convertir)
+
+cat("\nProblèmes dans result_2018_2024 :\n")
+identifier_problemes(result_2018_2024, colonnes_a_convertir)
+
+# Nettoyer et convertir les colonnes
+result_2010_2012 <- convertir_en_double(result_2010_2012, colonnes_a_convertir)
+result_2013_2017 <- convertir_en_double(result_2013_2017, colonnes_a_convertir)
+result_2018_2024 <- convertir_en_double(result_2018_2024, colonnes_a_convertir)
+
+# Vérifier les résultats après conversion
+cat("\nAperçu de result_2010_2012 après conversion :\n")
+str(result_2010_2012)
+
+cat("\nAperçu de result_2013_2017 après conversion :\n")
+str(result_2013_2017)
+
+cat("\nAperçu de result_2018_2024 après conversion :\n")
+str(result_2018_2024)
+```
+
+```{r split-data}
+# Liste des colonnes à multiplier
+colonnes_a_multiplier <- c("Nb_25","Nb_25_64", "Nb_65", "Nb_non_scolarises","Nb_H_total","Nb_F_total","Nb_H_15_24","Nb_H_25_64","Nb_H_65","Nb_F_15_24","Nb_F_25_64","Nb_F_65","Population_Totale","Nb_emplois_LT")
+
+# Fonction pour multiplier chaque colonne de la liste par "ratiopopulation"
+appliquer_ratio <- function(data, colonnes, colonne_ratio) {
+  # Vérifier que toutes les colonnes existent
+  colonnes_existantes <- intersect(colonnes, colnames(data))
+  if (length(colonnes_existantes) == 0) {
+    stop("Aucune des colonnes spécifiées n'existe dans le dataframe.")
+  }
+  
+  # Vérifier que la colonne de ratio existe
+  if (!(colonne_ratio %in% colnames(data))) {
+    stop("La colonne de ratio spécifiée n'existe pas dans le dataframe.")
+  }
+  
+  # Appliquer la multiplication
+  data[, colonnes_existantes] <- data[, colonnes_existantes] * data[[colonne_ratio]]
+  
+  return(data)
+}
+
+# Appliquer la fonction aux datasets
+result_2010_2012 <- appliquer_ratio(result_2010_2012, colonnes_a_multiplier, "PopulationRatio")
+result_2013_2017 <- appliquer_ratio(result_2013_2017, colonnes_a_multiplier, "PopulationRatio")
+result_2018_2024 <- appliquer_ratio(result_2018_2024, colonnes_a_multiplier, "PopulationRatio")
+
+# Afficher un aperçu après application
+cat("\nAperçu de result_2010_2012 après multiplication :\n")
+head(result_2010_2012)
+
+cat("\nAperçu de result_2013_2017 après multiplication :\n")
+head(result_2013_2017)
+
+cat("\nAperçu de result_2018_2024 après multiplication :\n")
+head(result_2018_2024)
+```
+
+```{r save-data}
+# Vérifier si le répertoire existe, sinon le créer
+if (!dir.exists(output_dir)) {
+  dir.create(output_dir, recursive = TRUE)
+}
+
+# Sauvegarder chaque dataset dans un fichier CSV
+write.csv(result_2010_2012, file.path(output_dir, "merge_data_2010_2012.csv"), row.names = FALSE)
+write.csv(result_2013_2017, file.path(output_dir, "merge_data_2013_2017.csv"), row.names = FALSE)
+write.csv(result_2018_2024, file.path(output_dir, "merge_data_2018_2024.csv"), row.names = FALSE)
+
+# Confirmation dans la console
+cat("Les fichiers CSV ont été sauvegardés dans :", output_dir, "\n")
+```
+
+```{r merge-data-in-one}
+# Ajouter une colonne "annees" à chaque dataset
+result_2010_2012$Annees <- '2010-2012'
+result_2013_2017$Annees <- '2013-2017'
+result_2018_2024$Annees <- '2018-2024'
+
+# Fusionner les datasets
+merged_results <- bind_rows(result_2010_2012, result_2013_2017, result_2018_2024)
+
+# Afficher un aperçu du résultat fusionné
+head(merged_results)
+
+# Sauvegarder le dataset fusionné
+write.csv(merged_results, file.path(output_dir, "merge_data_all_years.csv"), row.names = FALSE)
+
+cat("Les fichiers CSV ont été sauvegardés dans :", output_dir, "\n")
+```
