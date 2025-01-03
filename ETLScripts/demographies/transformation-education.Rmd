@@ -3,12 +3,16 @@
 library(readxl)
 library(dplyr)
 library(stringr)
+library(here)
+
+# Définir les chemins relatifs pour les fichiers
+input_dir_raw_data <- here("rawData", "demographies")
 
 # Charger les données pour 2010
-data2010 <- read_excel("/home/hugo/helyn-data/rawData/demographies/Education2010.xlsx",skip = 3)
+data2010 <- read_excel(file.path(input_dir_raw_data, "Education2010.xlsx"), skip = 3)
 
 # Charger les données pour 2021
-data2021 <- read_excel("/home/hugo/helyn-data/rawData/demographies/Education2021.xlsx",skip = 3)
+data2021 <- read_excel(file.path(input_dir_raw_data, "Education2021.xlsx"), skip = 3)
 ```
 
 ```{r rename-colomns, echo=TRUE}
@@ -120,8 +124,8 @@ str(data2021_clean)
 ```
 
 ```{r save-merged-data, echo=TRUE}
-# Chemin du dossier de destination
-output_dir <- "/home/hugo/helyn-data/cleanData/demographies"
+# Définir le chemin relatif pour le dossier de destination
+output_dir <- here("cleanData", "demographies")
 
 # Créer le dossier si nécessaire
 if (!dir.exists(output_dir)) {

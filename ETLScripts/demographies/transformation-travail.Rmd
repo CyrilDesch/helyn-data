@@ -1,12 +1,17 @@
 ```{r load-xlsx, echo=TRUE}
+library(here)
+
+# Définir le chemin relatif pour les fichiers
+input_dir_raw_data <- here("rawData", "demographies")
+
 # Charger les données pour 2010
-data2010 <- read.csv("/home/hugo/helyn-data/rawData/demographies/MarcheTravail_Emplois_Pop_Active_2010.csv", skip= 2)
+data2010 <- read.csv(file.path(input_dir_raw_data, "MarcheTravail_Emplois_Pop_Active_2010.csv"), skip = 2)
 
 # Charger les données pour 2015
-data2015 <- read.csv("/home/hugo/helyn-data/rawData/demographies/MarcheTravail_Emplois_Pop_Active_2015.csv", skip= 2)
+data2015 <- read.csv(file.path(input_dir_raw_data, "MarcheTravail_Emplois_Pop_Active_2015.csv"), skip = 2)
 
 # Charger les données pour 2021
-data2021 <- read.csv("/home/hugo/helyn-data/rawData/demographies/MarcheTravail_Emplois_Pop_Active_2021.csv", skip= 2)
+data2021 <- read.csv(file.path(input_dir_raw_data, "MarcheTravail_Emplois_Pop_Active_2021.csv"), skip = 2)
 ```
 
 ```{r rename-columns, echo=TRUE}
@@ -79,8 +84,8 @@ data2021$Code_Insee <- sapply(data2021$Code_Insee, format_code_insee)
 ```
 
 ```{r}
-# Chemin du dossier de destination
-output_dir <- "/home/hugo/helyn-data/cleanData/demographies"
+# Définir le chemin relatif pour le dossier de destination
+output_dir <- here("cleanData", "demographies")
 
 # Créer le dossier si nécessaire
 if (!dir.exists(output_dir)) {

@@ -9,22 +9,25 @@ library(here)
 output_dir <- here("cleanData/demographies")
 
 
-# Charger les données pour 2010
-age_2010_2012 <- read.csv("/home/hugo/helyn-data/cleanData/demographies/Age_2010_2012.csv", sep = ";", skip= 0)
-education_2010_2012 <- read.csv("/home/hugo/helyn-data/cleanData/demographies/Education_2010_2012.csv", skip= 0)
-sexe_2010_2012 <- read.csv("/home/hugo/helyn-data/cleanData/demographies/Sexe_2010_2012.csv", sep = ";", skip= 0)
-travail_2010_2012 <- read.csv("/home/hugo/helyn-data/cleanData/demographies/Travail_2010_2012.csv", skip= 0)
+# Définir les chemins relatifs pour les fichiers
+input_dir_demographies <- here("cleanData", "demographies")
 
-# Charger les données pour 2013_2017
-age_2013_2017 <- read.csv("/home/hugo/helyn-data/cleanData/demographies/Age_2013_2017.csv", sep = ";", skip = 0)
-sexe_2013_2017 <- read.csv("/home/hugo/helyn-data/cleanData/demographies/Sexe_2013_2017.csv", sep = ";", skip = 0)
-travail_2013_2017 <- read.csv("/home/hugo/helyn-data/cleanData/demographies/Travail_2013_2017.csv", skip = 0)
+# Charger les données pour 2010-2012
+age_2010_2012 <- read.csv(file.path(input_dir_demographies, "Age_2010_2012.csv"), sep = ";", skip = 0)
+education_2010_2012 <- read.csv(file.path(input_dir_demographies, "Education_2010_2012.csv"), skip = 0)
+sexe_2010_2012 <- read.csv(file.path(input_dir_demographies, "Sexe_2010_2012.csv"), sep = ";", skip = 0)
+travail_2010_2012 <- read.csv(file.path(input_dir_demographies, "Travail_2010_2012.csv"), skip = 0)
 
-# Charger les données pour 2018_2024
-age_2018_2024 <- read.csv("/home/hugo/helyn-data/cleanData/demographies/Age_2018_2024.csv", sep = ";", skip = 0)
-education_2018_2024 <- read.csv("/home/hugo/helyn-data/cleanData/demographies/Education_2018_2024.csv", skip = 0)
-sexe_2018_2024 <- read.csv("/home/hugo/helyn-data/cleanData/demographies/Sexe_2018_2024.csv", sep = ";", skip = 0)
-travail_2018_2024 <- read.csv("/home/hugo/helyn-data/cleanData/demographies/Travail_2018_2024.csv", skip = 0)
+# Charger les données pour 2013-2017
+age_2013_2017 <- read.csv(file.path(input_dir_demographies, "Age_2013_2017.csv"), sep = ";", skip = 0)
+sexe_2013_2017 <- read.csv(file.path(input_dir_demographies, "Sexe_2013_2017.csv"), sep = ";", skip = 0)
+travail_2013_2017 <- read.csv(file.path(input_dir_demographies, "Travail_2013_2017.csv"), skip = 0)
+
+# Charger les données pour 2018-2024
+age_2018_2024 <- read.csv(file.path(input_dir_demographies, "Age_2018_2024.csv"), sep = ";", skip = 0)
+education_2018_2024 <- read.csv(file.path(input_dir_demographies, "Education_2018_2024.csv"), skip = 0)
+sexe_2018_2024 <- read.csv(file.path(input_dir_demographies, "Sexe_2018_2024.csv"), sep = ";", skip = 0)
+travail_2018_2024 <- read.csv(file.path(input_dir_demographies, "Travail_2018_2024.csv"), skip = 0)
 
 # Renommer les colonnes pour uniformiser
 colnames(age_2010_2012) <- str_replace_all(colnames(age_2010_2012), c("Code.Commune" = "Code_Insee", "Nom.Commune" = "Libelle"))
