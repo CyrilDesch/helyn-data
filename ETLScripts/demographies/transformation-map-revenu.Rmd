@@ -26,6 +26,9 @@ library(data.table)
 bureau_vote_data <- st_read("../../rawData/demographies/bureau_votes_map.geojson")
 bureau_vote_data <- st_transform(bureau_vote_data, crs = 2154) # Projection to use EPSG:4326 to make intersection
 
+# Convertir les noms de colonnes en minuscules
+setnames(bureau_vote_data, tolower(names(bureau_vote_data)))
+
 # Ajouter un identifiant unique basé sur l'ordre des lignes
 bureau_vote_data$id <- seq_len(nrow(bureau_vote_data))
 ```
@@ -49,9 +52,12 @@ bureau_vote_view_data <- bureau_vote_data[sample(1:nrow(bureau_vote_data), 10000
 ### 2.1 Import data
 
 ```{r}
-revenu_data <- st_read("../../rawData/demographies/carreaux_revenu.gpkg")
+revenu_data <- st_read("../../rawData/demographies/carreaux_revenu_2019.gpkg") # TODO Switch date
 
 revenu_data <- st_transform(revenu_data, st_crs(bureau_vote_data)) # Projection to use EPSG:4326 to make intersection
+
+# Convertir les noms de colonnes en minuscules
+setnames(revenu_data, tolower(names(revenu_data)))
 
 revenu_data$id <- seq_len(nrow(revenu_data))
 ```
@@ -173,12 +179,12 @@ resultats_final <- intersections[, .(
     ind_65_79 = round(sum(ind_65_79 * proportion, na.rm = TRUE), 3),
     ind_80p = round(sum(ind_80p * proportion, na.rm = TRUE), 3),
     ind_inc = round(sum(ind_inc * proportion, na.rm = TRUE), 3)
-), by = codeBureauVote]
+), by = codebureauvote]
 
-resultats_final$geom <- bureau_vote_data$geom[match(resultats_final$codeBureauVote, bureau_vote_data$codeBureauVote)]
+resultats_final$geom <- bureau_vote_data$geom[match(resultats_final$codebureauvote, bureau_vote_data$codebureauvote)]
 
 resultats_final <- resultats_final %>%
-  mutate(codeBureauVote = gsub("_", "", codeBureauVote))
+  mutate(codebureauvote = gsub("_", "", codebureauvote))
 ```
 
 ```{r}
@@ -187,7 +193,7 @@ resultats_final <- st_transform(resultats_final, crs = 4326)
 print(st_bbox(resultats_final$geom))
 
 # Sauvegarder le résultat final
-st_write(resultats_final, "../../cleanData/demographies/resultats_bureaux_vote.geojson", delete_dsn = TRUE)
+st_write(resultats_final, "../../cleanData/demographies/resultats_bureaux_vote_2019.geojson", delete_dsn = TRUE) # TODO Switch to 2019 or 2019
 
 st_crs(resultats_final$geom)
 
@@ -214,4 +220,56 @@ message("Différence relative entre les deux totaux (%): ", round(difference_rel
 
 message("Validation terminée. Vérifiez les messages pour détecter d'éventuelles anomalies.")
 
+```
+
+# For gobal merge : transform Geojson to CSV + rename and remove specific column 
+```{r}
+# Fonction pour renommer les colonnes
+renommer_colonnes <- function(data) {
+  rename(data,
+         nb_menages = men,
+         nb_menages_pauvres = men_pauv,
+         nb_menages_seul = men_1ind,
+         nb_menages_5plus = men_5ind,
+         nb_menages_proprietaires = men_prop,
+         nb_menages_monoparentaux = men_fmp,
+         niveau_vie_total = ind_snv,
+         surface_totale_logements = men_surf,
+         nb_logements_collectifs = men_coll,
+         nb_logements_maisons = men_mais,
+         nb_log_avant_1945 = log_av45,
+         nb_log_1945_1969 = log_45_70,
+         nb_log_1970_1989 = log_70_90,
+         nb_log_apres_1990 = log_ap90,
+         nb_log_date_inconnue = log_inc,
+         nb_logements_sociaux = log_soc,
+         code_bureau_vote = codebureauvote
+  )
+}
+
+# Lecture des fichiers GeoJSON
+geojson_2019 <- st_read("../../cleanData/demographies/resultats_bureaux_vote_2019.geojson")
+
+# Suppression des colonnes "ind*" sauf "ind_snv"
+colonnes_a_supprimer <- grep("^ind(?!_snv$)", names(geojson_2019), value = TRUE, perl = TRUE)
+geojson_2019 <- geojson_2019 %>% select(-all_of(colonnes_a_supprimer))
+
+# Renommage des colonnes pour plus de lisibilité
+geojson_2019 <- renommer_colonnes(geojson_2019)
+
+# Séparation des colonnes "geometry" et "code_bureau_vote" pour GeoJSON
+geojson_geometry <- geojson_2019 %>% select(code_bureau_vote, geometry)
+
+# Suppression de la géométrie pour l'export CSV
+geojson_2019_data <- st_drop_geometry(geojson_2019)
+
+# Conversion en data.table pour export CSV rapide
+geojson_2019_data_dt <- as.data.table(geojson_2019_data)
+
+# Export des fichiers
+# 1. Export GeoJSON avec géométries et codes de bureaux de vote
+st_write(geojson_geometry, "../../cleanData/demographies/Revenu_map_geom_2018_2024.geojson", delete_dsn = TRUE)
+
+# 2. Export CSV pour les données sans géométrie
+fwrite(geojson_2019_data_dt, "../../cleanData/demographies/Revenu_map_2018_2024.csv")
 ```
