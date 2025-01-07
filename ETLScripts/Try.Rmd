@@ -10,7 +10,7 @@ library(dplyr)
 library(corrplot)
 ```
 
-```{r}
+```{r read-data}
 donnees <- read.csv(here("cleanData", "merge_data_all_years.csv"))
 
 # Affichage du nom des colonnes
@@ -75,6 +75,14 @@ corr_table_sorted <- corr_table[order(abs(corr_table$Correlation), decreasing = 
 
 # On affiche les 10 plus fortes corrélations
 head(corr_table_sorted, 40)
+
+# Tri par variable démographique (group_by) 
+corr_table_sorted_by_demo <- corr_table %>%
+  group_by(VarDemo) %>%
+  arrange(desc(abs(Correlation)), .by_group = TRUE)
+
+# Affiche toutes les corrélations, triées à l'intérieur de chaque VarDemo
+corr_table_sorted_by_demo
 ```
 
 ```{r cor-age-sexe}
@@ -105,16 +113,6 @@ corr_table_prop_sorted <- corr_table_prop[order(abs(corr_table_prop$Correlation)
 
 # Affichez par exemple les 20 premières lignes 
 head(corr_table_prop_sorted, 20)
-```
-
-```{r analyse-data}
-# Tri par variable démographique (group_by) 
-corr_table_sorted_by_demo <- corr_table %>%
-  group_by(VarDemo) %>%
-  arrange(desc(abs(Correlation)), .by_group = TRUE)
-
-# Affiche toutes les corrélations, triées à l'intérieur de chaque VarDemo
-corr_table_sorted_by_demo
 ```
 
 ```{r all-regressions, echo=TRUE, warning=FALSE, message=FALSE}
