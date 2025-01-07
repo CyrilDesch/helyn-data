@@ -1,4 +1,4 @@
-```{r load-data}
+```{r init}
 # Charger les packages nécessaires
 library(readxl)
 library(dplyr)
@@ -12,6 +12,9 @@ output_dir <- here("cleanData")
 # Définir les chemins relatifs pour les fichiers
 input_dir_demographies <- here("cleanData", "demographies")
 input_dir_elections <- here("cleanData", "elections")
+```
+
+```{r load-data}
 
 # Charger les données pour 2010-2012
 demographic_2010_2012 <- read.csv(file.path(input_dir_demographies, "Merged_Demographies_2010_2012.csv"), skip = 0)
@@ -239,20 +242,116 @@ write.csv(result_2018_2024, file.path(output_dir, "merge_data_2018_2024.csv"), r
 cat("Les fichiers CSV ont été sauvegardés dans :", output_dir, "\n")
 ```
 
+```{r refactor-column}
+result_2010_2012 <- read.csv(file.path(output_dir, "merge_data_2010_2012.csv"), skip = 0)
+result_2013_2017 <- read.csv(file.path(output_dir, "merge_data_2013_2017.csv"), skip = 0)
+result_2018_2024 <- read.csv(file.path(output_dir, "merge_data_2018_2024.csv"), skip = 0)
+
+# Fonction pour transformer les noms de colonnes en snake_case avec gestion des blocs de majuscules
+to_snake_case <- function(x) {
+  x %>%
+    str_replace_all("\\.+", "_") %>%
+    str_replace_all("([a-z0-9])([A-Z])", "\\1_\\2") %>%
+    str_replace_all("([A-Z]+)([A-Z][a-z])", "\\1_\\2") %>%
+    tolower()
+}
+
+# Fonction pour renommer et uniformiser les colonnes
+uniformiser_colonnes <- function(data) {
+  if (is.null(data) || ncol(data) == 0) {
+    stop("Le dataframe fourni est vide ou invalide.")
+  }
+  
+  cat("\nColonnes avant traitement :\n")
+  print(colnames(data))
+  
+  # Renommer "%" en "pourcentage"
+  colnames(data) <- gsub("%", "pourcentage", colnames(data))
+  colnames(data) <- gsub("X\\.", "pourcentage", colnames(data))
+  
+  # Remplacement en snake_case avec la fonction personnalisée
+  setnames(data, to_snake_case(names(data)))
+  
+  # Remplacer les espaces et les points résiduels par des underscores
+  colnames(data) <- gsub("[ .]+", "_", colnames(data))
+  
+  # Supprimer les underscores multiples ou finaux
+  colnames(data) <- gsub("_+", "_", colnames(data))
+  colnames(data) <- gsub("_$", "", colnames(data))
+  
+  cat("\nColonnes après traitement :\n")
+  print(colnames(data))
+  
+  return(data)
+}
+
+# Appliquer la fonction aux datasets
+result_2010_2012 <- tryCatch({
+  uniformiser_colonnes(result_2010_2012)
+}, error = function(e) {
+  cat("Erreur lors du traitement de result_2010_2012 :", e$message, "\n")
+  NULL
+})
+
+result_2013_2017 <- tryCatch({
+  uniformiser_colonnes(result_2013_2017)
+}, error = function(e) {
+  cat("Erreur lors du traitement de result_2013_2017 :", e$message, "\n")
+  NULL
+})
+
+result_2018_2024 <- tryCatch({
+  uniformiser_colonnes(result_2018_2024)
+}, error = function(e) {
+  cat("Erreur lors du traitement de result_2018_2024 :", e$message, "\n")
+  NULL
+})
+
+# Exportation des fichiers CSV corrigés
+write.csv(result_2010_2012, file.path(output_dir, "merge_data_2010_2012.csv"), row.names = FALSE)
+write.csv(result_2013_2017, file.path(output_dir, "merge_data_2013_2017.csv"), row.names = FALSE)
+write.csv(result_2018_2024, file.path(output_dir, "merge_data_2018_2024.csv"), row.names = FALSE)
+```
+
+```{r add-revenu}
+# Ajouter data revenu sur DATA FINAL 2013-2017 et 2018-2024
+# Note : merge ici car données démographique possédant déjà un code bureau de vote
+
+result_2013_2017 <- read.csv(file.path(output_dir, "merge_data_2013_2017.csv"), skip = 0)
+result_2018_2024 <- read.csv(file.path(output_dir, "merge_data_2018_2024.csv"), skip = 0)
+
+revenu_map_2013_2017 <- read.csv(file.path(input_dir_demographies, "Revenu_map_2013_2017.csv"), skip = 0)
+revenu_map_2018_2024 <- read.csv(file.path(input_dir_demographies, "Revenu_map_2018_2024.csv"), skip = 0)
+
+# Fusion des données 2013-2017
+result_2013_2017 <- result_2013_2017 %>%
+  left_join(revenu_map_2013_2017, by = c("code" = "code_bureau_vote"))
+
+# Fusion des données 2018-2024
+result_2018_2024 <- result_2018_2024 %>%
+  left_join(revenu_map_2018_2024, by = c("code" = "code_bureau_vote"))
+
+# Exportation des fichiers CSV fusionnés
+write.csv(result_2013_2017, file.path(output_dir, "merge_data_2013_2017.csv"), row.names = FALSE)
+write.csv(result_2018_2024, file.path(output_dir, "merge_data_2018_2024.csv"), row.names = FALSE)
+```
+
 ```{r merge-data-in-one}
 # Ajouter une colonne "annees" à chaque dataset
-result_2010_2012$Annees <- '2010-2012'
-result_2013_2017$Annees <- '2013-2017'
-result_2018_2024$Annees <- '2018-2024'
+# Note : le nom de la variable n'est pas bon au niveau des dates
+result_2010_2012$annees <- '2008-2012'
+result_2013_2017$annees <- '2013-2017'
+result_2018_2024$annees <- '2018-2022'
 
 # Fusionner les datasets
 merged_results <- bind_rows(result_2010_2012, result_2013_2017, result_2018_2024)
+
+# Renommer colonne id
+setnames(merged_results, "code", "code_bureau_vote")
 
 # Afficher un aperçu du résultat fusionné
 head(merged_results)
 
 # Sauvegarder le dataset fusionné
 write.csv(merged_results, file.path(output_dir, "merge_data_all_years.csv"), row.names = FALSE)
-
-cat("Les fichiers CSV ont été sauvegardés dans :", output_dir, "\n")
 ```

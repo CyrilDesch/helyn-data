@@ -1,0 +1,275 @@
+# Pass to data in 200m square to data by polling office
+
+# Requirements
+
+## Import libs
+
+```{r}
+library(sf)
+library(ggplot2)
+library(tmap)
+library(dplyr)
+library(leaflet)
+library(leafgl)
+library(htmlwidgets)
+library(data.table)
+```
+
+------------------------------------------------------------------------
+# Import and view base datas
+
+## 1. GeoJson bureaux de votes
+
+### 1.1 Import data
+
+```{r}
+bureau_vote_data <- st_read("../../rawData/demographies/bureau_votes_map.geojson")
+bureau_vote_data <- st_transform(bureau_vote_data, crs = 2154) # Projection to use EPSG:4326 to make intersection
+
+# Convertir les noms de colonnes en minuscules
+setnames(bureau_vote_data, tolower(names(bureau_vote_data)))
+
+# Ajouter un identifiant unique basé sur l'ordre des lignes
+bureau_vote_data$id <- seq_len(nrow(bureau_vote_data))
+```
+
+### 1.2 View in map
+
+```{r}
+set.seed(42)
+bureau_vote_view_data <- bureau_vote_data[sample(1:nrow(bureau_vote_data), 10000), ]
+
+#tmap_mode("view")
+#tmap_options(check.and.fix = TRUE)
+#tm_shape(bureau_vote_view_data) +
+#  tm_borders() +
+#  tm_fill(col = "blue", alpha = 0.5) +
+#  tm_layout(title = "Carte interactive GeoJSON")
+```
+
+## 2. GeoPackage revenu etc...
+
+### 2.1 Import data
+
+```{r}
+revenu_data <- st_read("../../rawData/demographies/carreaux_revenu_2019.gpkg") # TODO Switch date
+
+revenu_data <- st_transform(revenu_data, st_crs(bureau_vote_data)) # Projection to use EPSG:4326 to make intersection
+
+# Convertir les noms de colonnes en minuscules
+setnames(revenu_data, tolower(names(revenu_data)))
+
+revenu_data$id <- seq_len(nrow(revenu_data))
+```
+
+### 2.2 View in map
+
+```{r}
+set.seed(42)
+revenu_view_data <- revenu_data[sample(1:nrow(revenu_data), 1000), ]
+
+#tmap_mode("view")
+#tm_shape(revenu_view_data) +
+#  tm_borders(col = "blue") +
+#  tm_fill(col = "lightblue", alpha = 0.5) +
+#  tm_layout(title = "Visualisation des Carrés de 200m")
+```
+
+--- 
+
+# Compute part
+
+## Create intersection and proportion between 200m square and poll office zone. Then group datas by poll office id.
+```{r}
+
+bureau_vote_data <- st_make_valid(bureau_vote_data)
+revenu_data <- st_make_valid(revenu_data)
+
+revenu_data_used <- revenu_data
+
+
+# Taille du chunk (nombre de carrés par itération)
+chunk_size <- 50000
+
+# Créer un répertoire pour les résultats intermédiaires
+dir.create("../../rawData/demographies/intermediate_results", showWarnings = FALSE)
+
+# Diviser les données en chunks
+n_chunks <- ceiling(nrow(revenu_data_used) / chunk_size)
+chunk_indices <- split(1:nrow(revenu_data_used), 
+                       ceiling(seq_along(1:nrow(revenu_data_used)) / chunk_size))
+
+# Boucle sur chaque chunk
+for (i in seq_along(chunk_indices)) {
+  
+  # Nom du fichier de sortie pour ce chunk
+  output_file <- paste0("../../rawData/demographies/intermediate_results/chunk_", i, ".geojson")
+  
+  # Vérifier si le chunk a déjà été traité
+  if (file.exists(output_file)) {
+    message(paste("Chunk", i, "déjà traité. Passage au suivant."))
+    next
+  }
+  
+  # Extraire les données pour ce chunk
+  revenu_chunk <- revenu_data_used[chunk_indices[[i]], ]
+  
+  # Calcul des intersections
+  intersections <- tryCatch({
+    st_intersection(revenu_chunk, bureau_vote_data)
+  }, error = function(e) {
+    message(paste("Erreur dans le chunk", i, ":", e$message))
+    return(NULL)
+  })
+  
+  if (is.null(intersections)) next
+  
+  # Calcul des aires et des proportions
+  intersections$area_intersection <- st_area(intersections)
+  intersections$area_carre <- st_area(revenu_chunk[match(intersections$id, revenu_chunk$id), ])
+  intersections$proportion <- as.numeric(intersections$area_intersection / intersections$area_carre)
+
+  # Sauvegarder en GeoJSON au lieu de CSV
+  output_file <- paste0("../../rawData/demographies/intermediate_results/chunk_", i, ".geojson")
+  st_write(intersections, output_file, delete_dsn = TRUE)
+  
+  message(paste("Chunk", i, "terminé et sauvegardé dans", output_file))
+}
+```
+
+## Group files
+
+```{r}
+# Load data
+files <- list.files("../../rawData/demographies/intermediate_results", pattern = "*.geojson", full.names = TRUE)
+intersections <- do.call(rbind, lapply(files, st_read))
+```
+
+```{r}
+# Convertir le dataframe en data.table car plus opti que Dplyr pour fusionner des grands data sets (3M de ligne)
+setDT(intersections)
+
+# Calcul optimisé
+resultats_final <- intersections[, .(
+    ind = round(sum(ind * proportion, na.rm = TRUE), 3),
+    men = round(sum(men * proportion, na.rm = TRUE), 3),
+    men_pauv = round(sum(men_pauv * proportion, na.rm = TRUE), 3),
+    men_1ind = round(sum(men_1ind * proportion, na.rm = TRUE), 3),
+    men_5ind = round(sum(men_5ind * proportion, na.rm = TRUE), 3),
+    men_prop = round(sum(men_prop * proportion, na.rm = TRUE), 3),
+    men_fmp = round(sum(men_fmp * proportion, na.rm = TRUE), 3),
+    ind_snv = round(sum(ind_snv * proportion, na.rm = TRUE), 3),
+    men_surf = round(sum(men_surf * proportion, na.rm = TRUE), 3),
+    men_coll = round(sum(men_coll * proportion, na.rm = TRUE), 3),
+    men_mais = round(sum(men_mais * proportion, na.rm = TRUE), 3),
+    log_av45 = round(sum(log_av45 * proportion, na.rm = TRUE), 3),
+    log_45_70 = round(sum(log_45_70 * proportion, na.rm = TRUE), 3),
+    log_70_90 = round(sum(log_70_90 * proportion, na.rm = TRUE), 3),
+    log_ap90 = round(sum(log_ap90 * proportion, na.rm = TRUE), 3),
+    log_inc = round(sum(log_inc * proportion, na.rm = TRUE), 3),
+    log_soc = round(sum(log_soc * proportion, na.rm = TRUE), 3),
+    ind_0_3 = round(sum(ind_0_3 * proportion, na.rm = TRUE), 3),
+    ind_4_5 = round(sum(ind_4_5 * proportion, na.rm = TRUE), 3),
+    ind_6_10 = round(sum(ind_6_10 * proportion, na.rm = TRUE), 3),
+    ind_11_17 = round(sum(ind_11_17 * proportion, na.rm = TRUE), 3),
+    ind_18_24 = round(sum(ind_18_24 * proportion, na.rm = TRUE), 3),
+    ind_25_39 = round(sum(ind_25_39 * proportion, na.rm = TRUE), 3),
+    ind_40_54 = round(sum(ind_40_54 * proportion, na.rm = TRUE), 3),
+    ind_55_64 = round(sum(ind_55_64 * proportion, na.rm = TRUE), 3),
+    ind_65_79 = round(sum(ind_65_79 * proportion, na.rm = TRUE), 3),
+    ind_80p = round(sum(ind_80p * proportion, na.rm = TRUE), 3),
+    ind_inc = round(sum(ind_inc * proportion, na.rm = TRUE), 3)
+), by = codebureauvote]
+
+resultats_final$geom <- bureau_vote_data$geom[match(resultats_final$codebureauvote, bureau_vote_data$codebureauvote)]
+
+resultats_final <- resultats_final %>%
+  mutate(codebureauvote = gsub("_", "", codebureauvote))
+```
+
+```{r}
+resultats_final <- st_as_sf(resultats_final, crs = 2154)
+resultats_final <- st_transform(resultats_final, crs = 4326)
+print(st_bbox(resultats_final$geom))
+
+# Sauvegarder le résultat final
+st_write(resultats_final, "../../cleanData/demographies/resultats_bureaux_vote_2019.geojson", delete_dsn = TRUE) # TODO Switch to 2019 or 2019
+
+st_crs(resultats_final$geom)
+
+message("Tous les résultats ont été combinés et sauvegardés.")
+```
+
+# Final Check 
+```{r}
+# Final Check
+
+# Vérification 1 : Somme totale des individus
+total_ind_calculated <- sum(resultats_final$ind, na.rm = TRUE)
+
+# Afficher le total des individus calculés
+message("Total des individus calculés (intersections): ", total_ind_calculated)
+
+# Comparaison avec la somme totale initiale (par exemple, dans revenu_data)
+total_ind_initial <- sum(revenu_data$ind, na.rm = TRUE)
+message("Total des individus dans les données initiales (revenu_data): ", total_ind_initial)
+
+# Vérification 2 : Différence relative entre les deux totaux
+difference_relative <- abs(total_ind_calculated - total_ind_initial) / total_ind_initial * 100
+message("Différence relative entre les deux totaux (%): ", round(difference_relative, 2))
+
+message("Validation terminée. Vérifiez les messages pour détecter d'éventuelles anomalies.")
+
+```
+
+# For gobal merge : transform Geojson to CSV + rename and remove specific column 
+```{r}
+# Fonction pour renommer les colonnes
+renommer_colonnes <- function(data) {
+  rename(data,
+         nb_menages = men,
+         nb_menages_pauvres = men_pauv,
+         nb_menages_seul = men_1ind,
+         nb_menages_5plus = men_5ind,
+         nb_menages_proprietaires = men_prop,
+         nb_menages_monoparentaux = men_fmp,
+         niveau_vie_total = ind_snv,
+         surface_totale_logements = men_surf,
+         nb_logements_collectifs = men_coll,
+         nb_logements_maisons = men_mais,
+         nb_log_avant_1945 = log_av45,
+         nb_log_1945_1969 = log_45_70,
+         nb_log_1970_1989 = log_70_90,
+         nb_log_apres_1990 = log_ap90,
+         nb_log_date_inconnue = log_inc,
+         nb_logements_sociaux = log_soc,
+         code_bureau_vote = codebureauvote
+  )
+}
+
+# Lecture des fichiers GeoJSON
+geojson_2019 <- st_read("../../cleanData/demographies/resultats_bureaux_vote_2019.geojson")
+
+# Suppression des colonnes "ind*" sauf "ind_snv"
+colonnes_a_supprimer <- grep("^ind(?!_snv$)", names(geojson_2019), value = TRUE, perl = TRUE)
+geojson_2019 <- geojson_2019 %>% select(-all_of(colonnes_a_supprimer))
+
+# Renommage des colonnes pour plus de lisibilité
+geojson_2019 <- renommer_colonnes(geojson_2019)
+
+# Séparation des colonnes "geometry" et "code_bureau_vote" pour GeoJSON
+geojson_geometry <- geojson_2019 %>% select(code_bureau_vote, geometry)
+
+# Suppression de la géométrie pour l'export CSV
+geojson_2019_data <- st_drop_geometry(geojson_2019)
+
+# Conversion en data.table pour export CSV rapide
+geojson_2019_data_dt <- as.data.table(geojson_2019_data)
+
+# Export des fichiers
+# 1. Export GeoJSON avec géométries et codes de bureaux de vote
+st_write(geojson_geometry, "../../cleanData/demographies/Revenu_map_geom_2018_2024.geojson", delete_dsn = TRUE)
+
+# 2. Export CSV pour les données sans géométrie
+fwrite(geojson_2019_data_dt, "../../cleanData/demographies/Revenu_map_2018_2024.csv")
+```
