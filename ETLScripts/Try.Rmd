@@ -227,49 +227,4 @@ ggplot(donnees, aes(x = part_bac3_4, y = pourcentage_voix_votant_ed)) +
     x = "Part Bac+3/4",
     y = "% Voix ED"
   )
-
-# -------------------------------
-# 8. pourcentage_voix_votant_eg ~ part_non_peu_diplomes
-# -------------------------------
-mod_eg_peudipl <- lm(pourcentage_voix_votant_eg ~ part_non_peu_diplomes, data = donnees)
-summary(mod_eg_peudipl)
-
-ggplot(donnees, aes(x = part_non_peu_diplomes, y = pourcentage_voix_votant_eg)) +
-  geom_point() +
-  geom_smooth(method = "lm", se = FALSE, color = "red") +
-  labs(
-    title = "Régression linéaire : EG ~ part_non_peu_diplomes",
-    x = "Part non/peu diplômés",
-    y = "% Voix EG"
-  )
-
-# -------------------------------
-# 9. pourcentage_voix_votant_ed ~ part_cap_bep
-# -------------------------------
-mod_ed_capbep <- lm(pourcentage_voix_votant_ed ~ part_cap_bep, data = donnees)
-summary(mod_ed_capbep)
-
-ggplot(donnees, aes(x = part_cap_bep, y = pourcentage_voix_votant_ed)) +
-  geom_point() +
-  geom_smooth(method = "lm", se = FALSE, color = "red") +
-  labs(
-    title = "Régression linéaire : ED ~ part_cap_bep",
-    x = "Part CAP/BEP",
-    y = "% Voix ED"
-  )
-
-# -------------------------------
-# 10. pourcentage_voix_votant_g ~ nb_logements_sociaux
-# -------------------------------
-mod_g_logsoc <- lm(pourcentage_voix_votant_g ~ nb_logements_sociaux, data = donnees)
-summary(mod_g_logsoc)
-
-ggplot(donnees, aes(x = nb_logements_sociaux, y = pourcentage_voix_votant_g)) +
-  geom_point() +
-  geom_smooth(method = "lm", se = FALSE, color = "red") +
-  labs(
-    title = "Régression linéaire : G ~ nb_logements_sociaux",
-    x = "Nombre de logements sociaux",
-    y = "% Voix G"
-  )
 ```
