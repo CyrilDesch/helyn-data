@@ -1,0 +1,117 @@
+---
+title: "Création carte politique"
+output: html_document
+---
+
+```{r}
+library(sf)
+library(dplyr)
+library(readr)
+library(stringr)
+```
+
+```{r}
+# 1. Chargement des fichiers
+votes <- read_csv("../cleanData/merge_data_all_years.csv")
+geojson <- st_read("../cleanData/group_bdv_map.geojson")
+
+# Liste des périodes à traiter
+annee_periodes <- c("2018-2022", "2013-2017", "2008-2012")
+
+# Parcours de chaque période et export des fichiers
+for (periode in annee_periodes) {
+  # 2. Jointure et filtre
+  data <- geojson %>%
+    left_join(votes, by = "code_bureau_vote") %>%
+    filter(annees == periode)
+  
+  # 3. Agrégation par code_insee
+  aggregated_data <- data %>%
+    group_by(code_insee) %>%
+    summarise(
+      geometry = st_union(geometry),
+      votants = as.integer(sum(votants, na.rm = TRUE)),
+      non_exp = as.integer(sum(non_exp, na.rm = TRUE)),
+      voix_eg = as.integer(sum(voix_eg, na.rm = TRUE)),
+      voix_g = as.integer(sum(voix_g, na.rm = TRUE)),
+      voix_c = as.integer(sum(voix_c, na.rm = TRUE)),
+      voix_d = as.integer(sum(voix_d, na.rm = TRUE)),
+      voix_ed = as.integer(sum(voix_ed, na.rm = TRUE)),
+      nb_25 = as.integer(sum(nb_25, na.rm = TRUE)),
+      nb_25_64 = as.integer(sum(nb_25_64, na.rm = TRUE)),
+      nb_65 = as.integer(sum(nb_65, na.rm = TRUE)),
+      nb_non_scolarises = as.integer(sum(nb_non_scolarises, na.rm = TRUE)),
+      nb_h_total = as.integer(sum(nb_h_total, na.rm = TRUE)),
+      nb_f_total = as.integer(sum(nb_f_total, na.rm = TRUE)),
+      nb_h_15_24 = as.integer(sum(nb_h_15_24, na.rm = TRUE)),
+      nb_h_25_64 = as.integer(sum(nb_h_25_64, na.rm = TRUE)),
+      nb_h_65 = as.integer(sum(nb_h_65, na.rm = TRUE)),
+      nb_f_15_24 = as.integer(sum(nb_f_15_24, na.rm = TRUE)),
+      nb_f_25_64 = as.integer(sum(nb_f_25_64, na.rm = TRUE)),
+      nb_f_65 = as.integer(sum(nb_f_65, na.rm = TRUE)),
+      population_totale = as.integer(sum(population_totale, na.rm = TRUE)),
+      nb_emplois_lt = as.integer(sum(nb_emplois_lt, na.rm = TRUE)),
+      nb_menages = as.integer(sum(nb_menages, na.rm = TRUE)),
+      nb_menages_pauvres = as.integer(sum(nb_menages_pauvres, na.rm = TRUE)),
+      nb_menages_seul = as.integer(sum(nb_menages_seul, na.rm = TRUE)),
+      nb_menages_5plus = as.integer(sum(nb_menages_5plus, na.rm = TRUE)),
+      nb_menages_proprietaires = as.integer(sum(nb_menages_proprietaires, na.rm = TRUE)),
+      nb_menages_monoparentaux = as.integer(sum(nb_menages_monoparentaux, na.rm = TRUE)),
+      niveau_vie_total = sum(niveau_vie_total, na.rm = TRUE),
+      surface_totale_logements = sum(surface_totale_logements, na.rm = TRUE),
+      nb_logements_collectifs = as.integer(sum(nb_logements_collectifs, na.rm = TRUE)),
+      nb_logements_maisons = as.integer(sum(nb_logements_maisons, na.rm = TRUE)),
+      nb_log_avant_1945 = as.integer(sum(nb_log_avant_1945, na.rm = TRUE)),
+      nb_log_1945_1969 = as.integer(sum(nb_log_1945_1969, na.rm = TRUE)),
+      nb_log_1970_1989 = as.integer(sum(nb_log_1970_1989, na.rm = TRUE)),
+      nb_log_apres_1990 = as.integer(sum(nb_log_apres_1990, na.rm = TRUE)),
+      nb_log_date_inconnue = as.integer(sum(nb_log_date_inconnue, na.rm = TRUE)),
+      nb_logements_sociaux = as.integer(sum(nb_logements_sociaux, na.rm = TRUE)),
+      pourcentage_voix_votant_eg = as.integer(round(mean(pourcentage_voix_votant_eg, na.rm = TRUE), 0)),
+      pourcentage_voix_votant_g  = as.integer(round(mean(pourcentage_voix_votant_g,  na.rm = TRUE), 0)),
+      pourcentage_voix_votant_c  = as.integer(round(mean(pourcentage_voix_votant_c,  na.rm = TRUE), 0)),
+      pourcentage_voix_votant_d  = as.integer(round(mean(pourcentage_voix_votant_d,  na.rm = TRUE), 0)),
+      pourcentage_voix_votant_ed = as.integer(round(mean(pourcentage_voix_votant_ed, na.rm = TRUE), 0)),
+      population_ratio = round(mean(population_ratio, na.rm = TRUE), 2),
+      prop_25 = round(mean(prop_25, na.rm = TRUE), 2),
+      prop_25_64 = round(mean(prop_25_64, na.rm = TRUE), 2),
+      prop_65 = round(mean(prop_65, na.rm = TRUE), 2),
+      taux_nat = round(mean(taux_nat, na.rm = TRUE), 2),
+      taux_mort = round(mean(taux_mort, na.rm = TRUE), 2),
+      part_non_peu_diplomes = round(mean(part_non_peu_diplomes, na.rm = TRUE), 2),
+      part_bepc_brevet = round(mean(part_bepc_brevet, na.rm = TRUE), 2),
+      part_cap_bep = round(mean(part_cap_bep, na.rm = TRUE), 2),
+      part_bac = round(mean(part_bac, na.rm = TRUE), 2),
+      proportion_h = round(mean(proportion_h, na.rm = TRUE), 2),
+      proportion_f = round(mean(proportion_f, na.rm = TRUE), 2),
+      taux_activite = round(mean(taux_activite, na.rm = TRUE), 2),
+      part_emplois_salaries = round(mean(part_emplois_salaries, na.rm = TRUE), 2),
+      libelle = coalesce(first(libelle), "Inconnu"),
+      annees = periode
+    ) %>%
+    mutate(
+      `Orientation politique majoritaire` = case_when(
+        pourcentage_voix_votant_eg >= pmax(pourcentage_voix_votant_eg, pourcentage_voix_votant_g, pourcentage_voix_votant_c, pourcentage_voix_votant_d, pourcentage_voix_votant_ed, na.rm = TRUE) ~ "Extrême Gauche",
+        pourcentage_voix_votant_g  >= pmax(pourcentage_voix_votant_eg, pourcentage_voix_votant_g, pourcentage_voix_votant_c, pourcentage_voix_votant_d, pourcentage_voix_votant_ed, na.rm = TRUE) ~ "Gauche",
+        pourcentage_voix_votant_c  >= pmax(pourcentage_voix_votant_eg, pourcentage_voix_votant_g, pourcentage_voix_votant_c, pourcentage_voix_votant_d, pourcentage_voix_votant_ed, na.rm = TRUE) ~ "Centre",
+        pourcentage_voix_votant_d  >= pmax(pourcentage_voix_votant_eg, pourcentage_voix_votant_g, pourcentage_voix_votant_c, pourcentage_voix_votant_d, pourcentage_voix_votant_ed, na.rm = TRUE) ~ "Droite",
+        pourcentage_voix_votant_ed >= pmax(pourcentage_voix_votant_eg, pourcentage_voix_votant_g, pourcentage_voix_votant_c, pourcentage_voix_votant_d, pourcentage_voix_votant_ed, na.rm = TRUE) ~ "Extrême Droite"
+      )
+    )
+  
+  # 5. Export au format GeoJSON
+  st_write(aggregated_data, paste0("../cleanData/political_map_", periode, ".geojson"), delete_dsn = TRUE)
+}
+```
+
+## Then execute tippecanoe to create .mbtiles files
+
+tippecanoe -o political_map_2008_2012.mbtiles --layer=political_map --minimum-zoom=0 --maximum-zoom=14 --drop-rate=0 --simplification=1 --no-tile-size-limit --force political_map_2008-2012.geojson
+
+tippecanoe -o political_map_2013_2017.mbtiles --layer=political_map --minimum-zoom=0 --maximum-zoom=14 --drop-rate=0 --simplification=1 --no-tile-size-limit --force political_map_2013-2017.geojson
+
+tippecanoe -o political_map_2018_2022.mbtiles --layer=political_map --minimum-zoom=0 --maximum-zoom=14 --drop-rate=0 --simplification=1 --no-tile-size-limit --force political_map_2018-2022.geojson
+
+## Then execute tileserver to host mbtiles
+
+tileserver-gl
