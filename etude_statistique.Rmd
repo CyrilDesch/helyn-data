@@ -57,7 +57,6 @@ D’après le cadre théorique, la première étape consiste à collecter les r�
 
 De plus, nous nous concentrerons uniquement sur les bureaux de vote situés en France métropolitaine afin de simplifier la visualisation des données sur une carte. Cette restriction n’a qu’un faible impact sur la représentativité globale du jeu de données.
 
-Le script d'extraction et de nettoyage des données est disponible ici.
 
 ### Données socio-démographiques
 
@@ -88,9 +87,23 @@ Les données ont été vérifiées afin d’éviter les valeurs aberrantes et ga
 Le point de centralisation des données est le *"code bureau de vote"*, un identifiant unique attribué à chaque bureau de vote.
 
 ### Traitement des données électorales  
-Pour les résultats des élections, il a d'abord été nécessaire de transformer la liste des votes par candidat dans chaque bureau de vote en catégories agrégées correspondant aux principaux courants politiques : gauche, droite, centre, extrême droite, etc. Cette transformation permet de calculer des pourcentages par bureau de vote afin de comparer les tendances politiques plus facilement.  
+Pour les résultats des élections, il a d'abord été nécessaire de transformer la liste des votes par candidat dans chaque bureau de vote en catégories agrégées correspondant aux principaux courants politiques : Extrême Gauche, Gauche, Centre, Droite et Extrême Droite. Cette étape permet de simplifier l'analyse des tendances politiques tout en conservant une granularité suffisante.
 
-#### TODO : LENNON PARLE DE CE QUE T'AS FAIT (lis le paragraphe au dessus)
+Une colonne "Code" a été ajoutée en combinant les codes du département, de la commune et du bureau de vote, ce qui facilite la fusion avec d'autres jeux de données. Certaines colonnes, telles que les noms des départements ou les pourcentages inutiles (ex. : % Abstentions/Inscrits), ont été supprimées pour alléger le jeu de données. Une colonne "nonExp" a été créée pour regrouper les bulletins blancs et nuls. Cette information nous aide à mieux comprendre les niveaux de participation et de contestation.
+
+Les données finales ont été organisées de manière à regrouper les colonnes liées à chaque courant politique, en mettant en avant les variables principales (comme les pourcentages par votant, inscrits et suffrages exprimés).
+
+Un extrait des données nettoyées et organisées est présenté ci-dessous :
+
+```{r echo = FALSE, warning = FALSE, message = FALSE }
+
+library(readxl)
+library(gt)
+data <- read_excel("./cleanData/elections/resultats-burvot-t1-presidentielle_2022V2.xlsx")
+head(data, 3) %>%
+  gt()
+
+```
 
 ### Traitement des données socio-démographiques
 Concernant les facteurs socio-démographiques, certaines données étaient déjà disponibles au niveau des bureaux de vote, tandis que d’autres étaient regroupées au niveau communal. Ces dernières ont été réparties entre les bureaux de vote en suivant une répartition proportionnelle basée sur le nombre de votants, comme décrit précédemment.
@@ -102,7 +115,7 @@ Ces étapes ont permis de disposer d’un jeu de données homogène et prêt pou
 ```{r echo = FALSE, warning = FALSE, message = FALSE }
 library(readr)
 library(gt)
-data <- read_csv("./cleanData/merge_data_all_years.csv", show_col_types = FALSE)
+##data <- read_csv("./cleanData/merge_data_all_years.csv", show_col_types = FALSE)
 head(data, 3) %>% 
   gt()
 ```

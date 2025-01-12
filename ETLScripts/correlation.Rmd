@@ -1,0 +1,38 @@
+---
+title: "Tableau de Corrélation"
+author: "Lennon Herrmann"
+date: "2025-01-07"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# Charger les bibliothèques nécessaires
+library(knitr)
+
+# Charger les données depuis un fichier CSV
+donnees <- read.csv("C:/Users/lenno/Downloads/merge_data_all_years.csv")
+
+# Sélectionner uniquement les colonnes numériques
+donnees_numeriques <- donnees[, sapply(donnees, is.numeric)]
+
+# Supprimer les colonnes ayant une variance nulle
+donnees_numeriques <- donnees_numeriques[, sapply(donnees_numeriques, function(x) var(x, na.rm = TRUE) > 0)]
+
+# Vérifier qu'il y a des colonnes numériques
+if (ncol(donnees_numeriques) > 1) {
+  # Calculer la matrice de corrélation
+  matrice_corr <- cor(donnees_numeriques, use = "complete.obs", method = "pearson")
+  
+  # Sauvegarder la matrice de corrélation dans un fichier CSV
+  write.csv(
+    matrice_corr, 
+    "C:/Users/lenno/Downloads/matrice_correlation.csv", 
+    row.names = TRUE
+  )
+  
+  message("La matrice de corrélation a été sauvegardée dans : C:/Users/lenno/Downloads/matrice_correlation.csv")
+} else {
+  message("Aucune colonne numérique valide n'a été trouvée pour calculer une matrice de corrélation.")
+}
+```
