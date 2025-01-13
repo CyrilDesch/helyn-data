@@ -55,7 +55,7 @@ La **théorie de la privation relative** suggère que les inégalités perçues 
 Enfin, la **théorie du choix rationnel** propose que les électeurs adoptent des comportements stratégiques, en cherchant à maximiser leurs bénéfices individuels à travers leurs choix politiques. Par exemple, les propriétaires immobiliers ou les ménages vivant seuls pourraient orienter leurs votes en fonction des politiques perçues comme avantageuses ou défavorables à leurs intérêts.
 
 ### Modèle de l’étude
-Quel lien existe entre les différents facteurs socio-démographiques influencent-ils les choix politiques des citoyens ?
+Quel lien existe entre les différents facteurs socio-démographiques et influencent-ils les choix politiques des citoyens ?
 
 ### Objectifs de l’étude
 L’objectif est d'explorer ces hypothèses théoriques en s'appuyant sur des données socio-démographiques et électorales de plusieurs années. Cette étape théorique permet de poser les bases d’une analyse empirique qui pourra confirmer ou infirmer ces hypothèses en fonction des observations. Nous étudierons les liens au travers de différentes techniques d'analyse statistiques.
@@ -355,3 +355,17 @@ saveRDS(rf_model, file = "big_score_rf_model.rds")
 ---
 
 ## Synthèse
+
+Nous voyons instantanément qu'il y a eu de gros changements dans l'intention de vote des Français entre 2012 et 2022. Sur ces cartes, l'intensité des couleurs représente la force des tendances politiques : plus la teinte est bleue, plus l'électorat vote à droite ; plus elle est rouge, plus l'électorat vote à gauche.
+
+En 2012, très peu de communes montrent un vote majoritaire à droite. Le bleu est peu présent sur la carte, avec une concentration visible principalement dans certaines zones du Nord-Est de la France.
+
+En 2017 et en 2022, le bleu est beaucoup plus représenté, notamment dans le Nord-Est où il domine largement et atteint souvent des teintes de bleu foncé. Cette évolution marque un basculement progressif d'une partie importante de l'électorat vers la droite, avec des contrastes régionaux de plus en plus marqués.
+
+Cependant, certaines régions ont conservé une certaine stabilité dans leurs choix politiques. La Bretagne, par exemple, reste l’une des régions où le vote à gauche est resté dominant et où les évolutions dans les tendances politiques sont beaucoup moins marquées.
+
+<div style="display: flex; justify-content: space-between;">
+```{r echo=FALSE, out.width="32%", fig.show='hold', fig.cap=c("*Élection présidentielle 2012*", "*Élection présidentielle 2017*", "*Élection présidentielle 2022*")}
+knitr::include_graphics(c("France-2012.png", "France-2017.png", "France-2022.png"))
+```
+
