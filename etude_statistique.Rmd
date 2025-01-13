@@ -19,6 +19,19 @@ output:
 > - Ajouter des images, diagrammes et extraits de code.  
 > - Ajouter des échantillons de données pour expliciter chaque étape.    
 
+```{r echo = FALSE, warning = FALSE, message = FALSE }
+# Not display
+library(readr)
+library(gt)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(caret)
+library(ranger)
+library(doParallel)
+library(nnet)
+```
+
 --- 
 
 ## Introduction
@@ -116,6 +129,11 @@ Ces étapes ont permis de disposer d’un jeu de données homogène et prêt pou
 library(readr)
 library(gt)
 ##data <- read_csv("./cleanData/merge_data_all_years.csv", show_col_types = FALSE)
+data <- read_csv("./cleanData/merge_data_all_years.csv", show_col_types = FALSE)
+
+data <- data %>%
+  filter((voix_eg + voix_g + voix_c + voix_d + voix_ed) != 0)
+
 head(data, 3) %>% 
   gt()
 ```
@@ -123,6 +141,208 @@ head(data, 3) %>%
 --- 
 
 ## Data Mining Descriptif (analyse statistique simple chi2 et tout)
+
+L'analyse des données doit être la plus précise possible. Pour cela, nous avons choisi de créer un jeu de données intermédiaire qui élimine la duplication des bureaux de vote sur plusieurs années. Nous sélectionnerons aléatoirement une seule observation par bureau de vote parmi différentes années afin d’éviter un biais de similitude. En effet, un bureau ayant historiquement voté à droite a de fortes chances de continuer à voter de la même manière, ce qui pourrait fausser l’analyse si nous incluons plusieurs observations temporelles sans ajustement.  
+
+Nous ajoutons également une variable score comprise entre 0 et 1, qui indique l’orientation politique moyenne :  
+- 0 correspond à l’extrême gauche,  
+- 0.5 représente le centre,  
+- 1 correspond à l’extrême droite.  
+```{r}
+data <- data %>%
+  mutate(
+    score_orientation = round(
+        (voix_ed * 1 + voix_d * 0.75 + voix_c * 0.5 + voix_g * 0.25 + voix_eg * 0) /
+          (voix_eg + voix_g + voix_c + voix_d + voix_ed),
+        2
+      )
+  )
+
+score_moyen <- mean(data$score_orientation)
+
+# Intervalle de confiance
+n <- length(data$score_orientation)
+score_var <- var(data$score_orientation)
+alpha <- 0.05
+quant_stud <- qt(1-alpha/2, df=n-1)
+borne_inf <- score_moyen - quant_stud * sqrt(score_var/n)
+borne_sup <- score_moyen + quant_stud * sqrt(score_var/n)
+paste(borne_inf, "<", score_moyen, "<", borne_sup)
+```
+Cela indique que l’orientation politique française actuelle se situe plutôt au centre-droit.
+
+Notre objectif initial est d'explorer la corrélation entre le niveau de richesse et l'orientation politique. Les politiques de droite étant souvent perçues comme plus favorables aux personnes disposant de revenus élevés, il est raisonnable d’anticiper une corrélation positive entre un haut niveau de richesse et un soutien aux partis de droite.
+
+### Richesse
+
+N'ayant pas de données sur le niveau de vie en 2012, nous ne séléctionnerons pas de datas sur cette année. Voici le dataset que nous utiliserons:
+
+```{r echo = FALSE, warning = FALSE, message = FALSE }
+analys_data <- data %>%
+  filter(annees != "2008-2012") %>%
+  group_by(code_bureau_vote) %>%
+  slice_sample(n = 1) %>%
+  ungroup() %>%
+  sample_frac(size = 1/7)
+
+head(analys_data, 3) %>% 
+  gt()
+```
+
+  
+Observons rapidement la répartition des richesses en fonction des votes:
+  
+```{r echo = FALSE, warning = FALSE, message = FALSE }
+lims <- quantile(analys_data$niveau_vie_total, probs = c(0.01, 0.99), na.rm = TRUE)
+
+analys_data_clean <- analys_data %>%
+  filter(
+    niveau_vie_total >= lims[1],
+    niveau_vie_total <= lims[2]
+  )
+
+# EG
+ggplot(analys_data_clean, aes(x = pourcentage_voix_votant_eg, y = niveau_vie_total)) +
+  geom_point(alpha = 0.7, color = "blue") +
+  labs(
+    title = "Relation entre Niveau de vie et % Voix EG",
+    x = "Pourcentage de voix votant EG",
+    y = "Niveau de vie total"
+  ) +
+  theme_minimal()
+
+# ED
+ggplot(analys_data_clean, aes(x = pourcentage_voix_votant_ed, y = niveau_vie_total)) +
+  geom_point(alpha = 0.7, color = "blue") +
+  labs(
+    title = "Relation entre Niveau de vie et % Voix ED",
+    x = "Pourcentage de voix votant ED",
+    y = "Niveau de vie total"
+  ) +
+  theme_minimal()
+```
+
+On constate qu'effectivement le niveau de vie semble impacter le pourcentage de voix d'extrême gauche mais n'explique pas tout. Pour ce qui est de l'extrème droite, on observe une grande répartition donc le niveau de vie ne semble pas un facteur premier. Mais il y a tout de même cette tendance, ce qui laisse penser que la pauvreté pousse à voté dans les extrêmes.   
+
+Comparons maintenant avec notre score :  
+
+```{r echo = FALSE, warning = FALSE, message = FALSE }
+
+ggplot(analys_data_clean, aes(x = score_orientation, y = niveau_vie_total)) +
+  geom_point(alpha = 0.7, color = "blue") +
+  scale_x_continuous(
+    limits = c(0, 1),                # Force l'axe X entre 0 et 1
+    breaks = seq(0, 1, by = 0.1)     # Gradations tous les 0.1
+  ) +
+  labs(
+    title = "Relation entre le niveau de vie et l'orientation de vote",
+    x = "Score (0 = Extrême gauche, 1 = Extrême droite)",
+    y = "Niveau de vie total"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5),  # Centre le titre
+    text = element_text(size = 12)           # Ajuste la taille du texte
+  )
+```
+Nous cherchons une diagonale allant de l'angle inférieur gauche vers l'angle supérieur droit. Ce n'est pas le cas ici, ce qui indique que l'influence de la richesse sur les votes n'est pas significative lorsqu'elle est observée isolément. En revanche, notre théorie est confirmée : plus le niveau de richesse est faible, plus les votes pour les extrêmes augmentent.
+
+En conclusion, la richesse permet simplement d'expliquer qu'un niveau de vie bas est associé à une probabilité plus élevée de vote pour les extrêmes.
+
+### Recherche globale
+
+#### Par visualisation
+
+Comme nous venons de le voir, il est intéressant de ploter notre score face à nos différentes données, nous allons donc tous les tester rapidement et essayer d'observer.
+
+```{r}
+analys_data_long <- analys_data_clean %>%
+  select(score_orientation, where(is.numeric)) %>%
+  select(-contains("voix")) %>%
+  pivot_longer(
+    cols = -score_orientation,
+    names_to = "variable",
+    values_to = "value"
+  )
+
+p <- ggplot(analys_data_long, aes(x = score_orientation, y = value)) +
+  geom_point(alpha = 0.7, color = "blue") +
+  facet_wrap(~ variable, scales = "free_y") +
+  labs(
+    title = "Score d'orientation vs. autres variables",
+    x = "Score (0 = Extrême gauche, 1 = Extrême droite)",
+    y = "Variables"
+  ) +
+  theme_minimal()
+
+# Export en image pour une meilleur lecture
+ggsave("scatterplot_matrix.png", plot = p, width = 12, height = 8, dpi = 300)
+
+p
+```
+
+Cette matrice de graphiques en dispersions nous donne un bonne aperçu de quel variables seront intéressantes à étudier. 
+
+#### Par un modèle
+
+```{r eval=FALSE}
+# Préparation des données
+df_model <- data %>%
+  group_by(code_bureau_vote) %>%
+  slice_sample(n = 1) %>%
+  ungroup() %>%
+  select(where(is.numeric)) %>%
+  select(-contains("voix"), -contains("non_exp")) %>%
+  filter(!is.na(score_orientation))
+
+nzv <- nearZeroVar(df_model, saveMetrics = TRUE)
+df_model <- df_model[, !nzv$nzv]
+
+preProcValues <- preProcess(df_model, method = "medianImpute")
+df_model <- predict(preProcValues, df_model)
+
+num_cores <- parallel::detectCores() - 1
+cl <- makeCluster(num_cores)
+registerDoParallel(cl)
+
+train_ctrl <- trainControl(
+  method        = "repeatedcv",
+  number        = 5,
+  repeats       = 3,
+  verboseIter   = FALSE,
+  allowParallel = TRUE
+)
+
+tune_grid <- expand.grid(
+  mtry          = c(2, 4, 6, 8),
+  splitrule     = c("variance", "extratrees"),
+  min.node.size = c(5, 10, 15)
+)
+
+df_model <- as.data.frame(df_model)
+X <- df_model[, setdiff(names(df_model), "score_orientation")]
+Y <- df_model$score_orientation
+
+set.seed(123)
+rf_model <- train(
+  x          = X,
+  y          = Y,
+  method     = "ranger",
+  trControl  = train_ctrl,
+  tuneGrid   = tune_grid,
+  num.trees  = 500,
+  importance = "impurity"
+)
+
+print(rf_model)
+plot(rf_model)
+varImp(rf_model)
+
+stopCluster(cl)
+saveRDS(rf_model, file = "big_score_rf_model.rds")
+
+```
+
 
 --- 
 

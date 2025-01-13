@@ -3,3 +3,4 @@
 .RData
 .Ruserdata
 .DS_Store
+big_score_rf_model.rds

@@ -90,13 +90,18 @@ for (periode in annee_periodes) {
       annees = periode
     ) %>%
     mutate(
-      `Orientation politique majoritaire` = case_when(
+      orientation_politique_majoritaire = case_when(
+        (pourcentage_voix_votant_eg + pourcentage_voix_votant_g + pourcentage_voix_votant_c + pourcentage_voix_votant_d + pourcentage_voix_votant_ed) == 0 ~ "Aucune",
         pourcentage_voix_votant_eg >= pmax(pourcentage_voix_votant_eg, pourcentage_voix_votant_g, pourcentage_voix_votant_c, pourcentage_voix_votant_d, pourcentage_voix_votant_ed, na.rm = TRUE) ~ "Extrême Gauche",
         pourcentage_voix_votant_g  >= pmax(pourcentage_voix_votant_eg, pourcentage_voix_votant_g, pourcentage_voix_votant_c, pourcentage_voix_votant_d, pourcentage_voix_votant_ed, na.rm = TRUE) ~ "Gauche",
         pourcentage_voix_votant_c  >= pmax(pourcentage_voix_votant_eg, pourcentage_voix_votant_g, pourcentage_voix_votant_c, pourcentage_voix_votant_d, pourcentage_voix_votant_ed, na.rm = TRUE) ~ "Centre",
         pourcentage_voix_votant_d  >= pmax(pourcentage_voix_votant_eg, pourcentage_voix_votant_g, pourcentage_voix_votant_c, pourcentage_voix_votant_d, pourcentage_voix_votant_ed, na.rm = TRUE) ~ "Droite",
         pourcentage_voix_votant_ed >= pmax(pourcentage_voix_votant_eg, pourcentage_voix_votant_g, pourcentage_voix_votant_c, pourcentage_voix_votant_d, pourcentage_voix_votant_ed, na.rm = TRUE) ~ "Extrême Droite"
-      )
+      ),
+      score_orientation = case_when(
+    (voix_eg + voix_g + voix_c + voix_d + voix_ed) == 0 ~ 0.5,
+    TRUE ~ round((voix_eg * 1 + voix_g * 0.75 + voix_c * 0.5 + voix_d * 0.25 + voix_ed * 0) / (voix_eg + voix_g + voix_c + voix_d + voix_ed), 2)
+  )
     )
   
   # 5. Export au format GeoJSON
@@ -114,4 +119,4 @@ tippecanoe -o political_map_2018_2022.mbtiles --layer=political_map --minimum-zo
 
 ## Then execute tileserver to host mbtiles
 
-tileserver-gl
+tileserver-gl --config tileserver-config.json
