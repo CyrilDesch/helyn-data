@@ -1,0 +1,317 @@
+---
+title: "Try"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(readxl)
+library(here)
+library(dplyr)
+library(corrplot)
+library(ggplot2)
+library(knitr)
+library(MASS)
+```
+
+```{r read-data}
+donnees <- read.csv(here("cleanData", "merge_data_all_years.csv"))
+
+# Affichage du nom des colonnes
+str(donnees)
+head(donnees)
+```
+
+```{r analyse-data}
+vote_cols <- c(
+  "pourcentage_voix_votant_eg",
+  "pourcentage_voix_votant_g",
+  "pourcentage_voix_votant_c",
+  "pourcentage_voix_votant_d",
+  "pourcentage_voix_votant_ed"
+)
+
+vote_cols2 <- c(
+  "votants", 
+  "non_exp", 
+  "voix_eg", 
+  "pourcentage_voix_votant_eg",
+  "voix_g", 
+  "pourcentage_voix_votant_g",
+  "voix_c", 
+  "pourcentage_voix_votant_c",
+  "voix_d", 
+  "pourcentage_voix_votant_d",
+  "voix_ed",
+  "pourcentage_voix_votant_ed"
+)
+
+df_numeric <- donnees %>%
+  select_if(is.numeric)
+
+dem_cols <- setdiff(names(df_numeric), vote_cols2)
+
+# On filtre les colonnes "vote" et "demographie" dans df_numeric
+df_vote <- donnees %>%
+  dplyr::select(any_of(vote_cols)) %>%
+  dplyr::select_if(is.numeric)
+
+df_demo <- donnees %>%
+  dplyr::select(any_of(dem_cols)) %>%
+  dplyr::select_if(is.numeric)
+
+# cor(x, y) calcule les corrélations entre chaque colonne de x et chaque colonne de y
+corr_vote_demo <- cor(df_vote, df_demo, use = "pairwise.complete.obs")
+
+# Afficher la matrice
+corr_vote_demo
+
+corrplot(corr_vote_demo, method = "color", is.corr = FALSE)
+
+# On la transforme en tableau
+corr_table <- as.data.frame(as.table(corr_vote_demo))
+
+# On nomme clairement les colonnes
+colnames(corr_table) <- c("VarVote", "VarDemo", "Correlation")
+
+# On trie selon la valeur absolue du coefficient
+corr_table_sorted <- corr_table[order(abs(corr_table$Correlation), decreasing = TRUE), ]
+
+# On affiche les 10 plus fortes corrélations
+head(corr_table_sorted, 40)
+
+# Tri par variable démographique (group_by) 
+corr_table_sorted_by_demo <- corr_table %>%
+  group_by(VarDemo) %>%
+  arrange(desc(abs(Correlation)), .by_group = TRUE)
+
+# Affiche toutes les corrélations, triées à l'intérieur de chaque VarDemo
+corr_table_sorted_by_demo
+```
+
+```{r cor-age-sexe}
+prop_cols <- c(
+  "prop_25",      # proportion de la population ayant 25 ans ?
+  "prop_25_64",   # proportion 25-64 ans
+  "prop_65",      # proportion 65+ ans
+  "proportion_h", # proportion d'hommes
+  "proportion_f"  # proportion de femmes
+  # ... ajoutez d'autres variables de proportions si besoin
+)
+
+df_prop <- donnees %>%
+  dplyr::select(any_of(prop_cols)) %>%
+  dplyr::select_if(is.numeric)
+
+corr_vote_prop <- cor(df_vote, df_prop, use = "pairwise.complete.obs")
+corr_vote_prop
+
+corrplot(corr_vote_prop, method = "color", is.corr = FALSE)
+
+corr_table_prop <- as.data.frame(as.table(corr_vote_prop))
+colnames(corr_table_prop) <- c("VarVote", "VarProp", "Correlation")
+
+# Tri par ordre décroissant d'absolu de corrélation
+corr_table_prop_sorted <- corr_table_prop[order(abs(corr_table_prop$Correlation), 
+                                                decreasing = TRUE), ]
+
+# Affichez par exemple les 20 premières lignes 
+head(corr_table_prop_sorted, 20)
+```
+
+```{r all-regressions, echo=TRUE, warning=FALSE, message=FALSE}
+# Fonction pour générer un graphique avec p-values et R-squared
+generate_plot <- function(data, x_var, y_var, x_label, y_label, title) {
+  # Modèle de régression
+  model <- lm(as.formula(paste0(y_var, " ~ ", x_var)), data = data)
+  model_summary <- summary(model)
+  
+  # Affichage des résultats de la régression dans la console
+  cat("Résultats de la régression :", title, "\n")
+  print(model_summary)
+  cat("\n\n")
+  
+  # Extraction des p-values, R-squared
+  coef_pvalue <- signif(model_summary$coefficients[2, 4], 5) # P-value du coefficient
+  fstat_pvalue <- signif(pf(
+    model_summary$fstatistic[1],
+    model_summary$fstatistic[2],
+    model_summary$fstatistic[3],
+    lower.tail = FALSE
+  ), 5) # P-value de la F-statistic
+  r_squared <- signif(model_summary$r.squared, 5) # R-squared
+  
+  # Génération du graphique
+  ggplot(data, aes_string(x = x_var, y = y_var)) +
+    geom_point() +
+    geom_smooth(method = "lm", se = FALSE, color = "red") +
+    labs(
+      title = title,
+      x = x_label,
+      y = y_label
+    ) +
+    annotate(
+      "text",
+      x = max(data[[x_var]], na.rm = TRUE) * 0.8,
+      y = max(data[[y_var]], na.rm = TRUE) * 0.8,
+      label = paste0(
+        "R² = ", r_squared,
+        "\nP-val Coeff = ", coef_pvalue,
+        "\nP-val F-Stat = ", fstat_pvalue
+      ),
+      hjust = 0,
+      size = 4,
+      color = "blue"
+    )
+}
+
+# Liste des régressions à effectuer
+regressions <- list(
+  list(x = "part_employes", y = "pourcentage_voix_votant_eg", 
+       x_label = "Part des employés", y_label = "% Voix EG", title = "Régression linéaire : EG ~ part_employes"),
+  list(x = "part_employes", y = "pourcentage_voix_votant_c", 
+       x_label = "Part des employés", y_label = "% Voix C", title = "Régression linéaire : C ~ part_employes"),
+  list(x = "part_ouvriers", y = "pourcentage_voix_votant_eg", 
+       x_label = "Part des ouvriers", y_label = "% Voix EG", title = "Régression linéaire : EG ~ part_ouvriers"),
+  list(x = "part_ouvriers", y = "pourcentage_voix_votant_c", 
+       x_label = "Part des ouvriers", y_label = "% Voix C", title = "Régression linéaire : C ~ part_ouvriers"),
+  list(x = "part_bac5_plus", y = "pourcentage_voix_votant_ed", 
+       x_label = "Part Bac+5 et plus", y_label = "% Voix ED", title = "Régression linéaire : ED ~ part_bac5_plus"),
+  list(x = "part_non_peu_diplomes", y = "pourcentage_voix_votant_c", 
+       x_label = "Part non/peu diplômés", y_label = "% Voix C", title = "Régression linéaire : C ~ part_non_peu_diplomes"),
+  list(x = "part_bac3_4", y = "pourcentage_voix_votant_ed", 
+       x_label = "Part Bac+3/4", y_label = "% Voix ED", title = "Régression linéaire : ED ~ part_bac3_4")
+)
+
+# Générer et afficher les graphiques
+plots <- lapply(regressions, function(reg) {
+  generate_plot(
+    data = donnees,
+    x_var = reg$x,
+    y_var = reg$y,
+    x_label = reg$x_label,
+    y_label = reg$y_label,
+    title = reg$title
+  )
+})
+
+# Afficher les graphiques
+for (p in plots) print(p)
+```
+
+```{r k2}
+# Fonction pour découper les données et effectuer le test du Chi²
+generate_chi2_test_ordered <- function(data, x_var, y_var, x_label, y_label, title, alpha = 0.05) {
+  # Découper les variables en 4 intervalles ordonnés
+  data <- data %>%
+    mutate(
+      cat_x = cut(.data[[x_var]], breaks = quantile(.data[[x_var]], probs = seq(0, 1, by = 0.25), na.rm = TRUE), include.lowest = TRUE),
+      cat_y = cut(.data[[y_var]], breaks = quantile(.data[[y_var]], probs = seq(0, 1, by = 0.25), na.rm = TRUE), include.lowest = TRUE)
+    )
+  
+  # Générer la table de contingence
+  contingence_table <- table(data$cat_x, data$cat_y)
+  
+  # Afficher la table de contingence
+  cat("\nTable de contingence pour :", title, "\n")
+  print(contingence_table)
+  
+  # Effectuer le test du Chi²
+  chi2_result <- chisq.test(contingence_table)
+  
+  # Résultats principaux
+  chi2_stat <- signif(chi2_result$statistic, 5)  # Statistique Chi²
+  p_value <- signif(chi2_result$p.value, 5)      # P-value
+  expected <- chi2_result$expected               # Effectifs attendus
+  
+  # Vérification des conditions du test
+  if (any(expected < 5)) {
+    warning("Certaines attentes sont inférieures à 5. Le test du Chi² peut ne pas être fiable.")
+  }
+  
+  # Interprétation du test
+  decision <- ifelse(
+    p_value <= alpha,
+    paste0("Rejet de H0 : Les variables sont dépendantes (", x_label, " influence ", y_label, ")."),
+    paste0("Conservation de H0 : Les variables sont indépendantes (", x_label, " n'influence pas ", y_label, ").")
+  )
+  
+  # Retourner les résultats pour résumé
+  return(list(
+    title = title,
+    chi2_stat = chi2_stat,
+    p_value = p_value,
+    decision = decision
+  ))
+}
+```
+
+```{r multiple-reg}
+# Préparation des données pour la régression
+# Suppression des lignes avec NA dans df_vote et df_demo
+combined_data <- cbind(df_vote, df_demo) %>% 
+  na.omit()
+
+# Définition des variables
+response_var <- "pourcentage_voix_votant_eg" # Variable réponse issue de df_vote
+predictors <- colnames(df_demo) # Prend toutes les variables de df_demo comme prédicteurs
+
+# Construction de la formule de régression
+formula <- as.formula(paste(response_var, "~", paste(predictors, collapse = " + ")))
+
+# Régression linéaire multiple
+multiple_regression_model <- lm(formula, data = combined_data)
+
+# Résumé du modèle
+cat("\n--- Résumé de la régression linéaire multiple ---\n")
+summary(multiple_regression_model)
+```
+
+```{r multiple-reg2}
+# Fonction principale pour exécuter et résumer les analyses
+run_analysis <- function(data, response_var, predictors) {
+  # Nettoyage des données
+  clean_data <- data %>%
+    dplyr::select(all_of(c(response_var, predictors))) %>%
+    na.omit()
+  
+  # Régression complète
+  cat("\n--- Régression Linéaire Multiple Complète Sur Les Prédicteurs gardés ---\n")
+  full_model <- lm(as.formula(paste(response_var, "~", paste(predictors, collapse = " + "))), data = clean_data)
+  print(summary(full_model))
+  
+  # Forward selection
+  cat("\n--- Sélection Forward ---\n")
+  forward_model <- run_forward_selection(clean_data, response_var, predictors)
+  print(summary(forward_model))
+  
+  # Backward selection
+  cat("\n--- Sélection Backward ---\n")
+  backward_model <- run_backward_selection(clean_data, response_var, predictors)
+  print(summary(backward_model))
+  
+  # Comparaison des modèles
+  comparison <- data.frame(
+    Model = c("Full Model", "Forward Selection", "Backward Selection"),
+    AIC = c(AIC(full_model), AIC(forward_model), AIC(backward_model)),
+    Adj_R_Squared = c(
+      summary(full_model)$adj.r.squared,
+      summary(forward_model)$adj.r.squared,
+      summary(backward_model)$adj.r.squared
+    )
+  )
+  
+  cat("\n--- Résumé des Résultats ---\n")
+  print(kable(comparison, format = "html", caption = "Comparaison des modèles de régression"))
+}
+
+# Liste des prédicteurs (variables explicatives)
+predictors <- c("part_employes", "part_ouvriers", "part_bac5_plus", 
+                "part_non_peu_diplomes", "part_bac3_4", "pourcentage_voix_votant_c", 
+                "pourcentage_voix_votant_d")
+
+# Variable réponse
+response_var <- "pourcentage_voix_votant_eg"
+
+# Exécuter l'analyse
+run_analysis(donnees, response_var, predictors)
+```
