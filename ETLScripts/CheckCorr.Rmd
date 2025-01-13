@@ -245,73 +245,65 @@ generate_chi2_test_ordered <- function(data, x_var, y_var, x_label, y_label, tit
 }
 ```
 
-```{r multiple-reg}
-# Préparation des données pour la régression
+```{r data-prep}
 # Suppression des lignes avec NA dans df_vote et df_demo
 combined_data <- cbind(df_vote, df_demo) %>% 
   na.omit()
 
-# Définition des variables
-response_var <- "pourcentage_voix_votant_eg" # Variable réponse issue de df_vote
-predictors <- colnames(df_demo) # Prend toutes les variables de df_demo comme prédicteurs
-
-# Construction de la formule de régression
-formula <- as.formula(paste(response_var, "~", paste(predictors, collapse = " + ")))
-
-# Régression linéaire multiple
-multiple_regression_model <- lm(formula, data = combined_data)
-
-# Résumé du modèle
-cat("\n--- Résumé de la régression linéaire multiple ---\n")
-summary(multiple_regression_model)
+# Vérification des dimensions après nettoyage
+cat("Dimensions des données combinées après suppression des NA :", dim(combined_data), "\n")
 ```
 
-```{r multiple-reg2}
-# Fonction principale pour exécuter et résumer les analyses
-run_analysis <- function(data, response_var, predictors) {
-  # Nettoyage des données
-  clean_data <- data %>%
-    dplyr::select(all_of(c(response_var, predictors))) %>%
-    na.omit()
-  
-  # Régression complète
-  cat("\n--- Régression Linéaire Multiple Complète Sur Les Prédicteurs gardés ---\n")
-  full_model <- lm(as.formula(paste(response_var, "~", paste(predictors, collapse = " + "))), data = clean_data)
-  print(summary(full_model))
-  
-  # Forward selection
-  cat("\n--- Sélection Forward ---\n")
-  forward_model <- run_forward_selection(clean_data, response_var, predictors)
-  print(summary(forward_model))
-  
-  # Backward selection
-  cat("\n--- Sélection Backward ---\n")
-  backward_model <- run_backward_selection(clean_data, response_var, predictors)
-  print(summary(backward_model))
-  
-  # Comparaison des modèles
-  comparison <- data.frame(
-    Model = c("Full Model", "Forward Selection", "Backward Selection"),
-    AIC = c(AIC(full_model), AIC(forward_model), AIC(backward_model)),
-    Adj_R_Squared = c(
-      summary(full_model)$adj.r.squared,
-      summary(forward_model)$adj.r.squared,
-      summary(backward_model)$adj.r.squared
-    )
-  )
-  
-  cat("\n--- Résumé des Résultats ---\n")
-  print(kable(comparison, format = "html", caption = "Comparaison des modèles de régression"))
-}
-
-# Liste des prédicteurs (variables explicatives)
-predictors <- c("part_employes", "part_ouvriers", "part_bac5_plus", 
-                "part_non_peu_diplomes", "part_bac3_4", "pourcentage_voix_votant_c", 
-                "pourcentage_voix_votant_d")
-
-# Variable réponse
+```{r full-model, results='asis'}
+# Définition de la variable réponse et des prédicteurs
 response_var <- "pourcentage_voix_votant_eg"
+predictors <- colnames(df_demo) # Toutes les variables de df_demo comme prédicteurs
 
-# Exécuter l'analyse
-run_analysis(donnees, response_var, predictors)
+# Construction du modèle complet
+full_model <- lm(as.formula(paste(response_var, "~", paste(predictors, collapse = " + "))), 
+                 data = combined_data)
+
+# Résumé du modèle complet
+cat("\n### Résumé du modèle complet\n")
+kable(summary(full_model)$coefficients, caption = "Coefficients du modèle complet")
+cat("\nR-squared ajusté :", round(summary(full_model)$adj.r.squared, 4), "\n")
+```
+
+```{r forward-selection, results='asis'}
+# Sélection forward
+forward_model <- step(lm(as.formula(paste(response_var, "~ 1")), data = combined_data),
+                      scope = list(lower = lm(as.formula(paste(response_var, "~ 1")), data = combined_data), 
+                                   upper = full_model), 
+                      direction = "forward", trace = 0)
+
+# Résumé du modèle forward
+cat("\n### Résumé du modèle sélectionné (Forward)\n")
+kable(summary(forward_model)$coefficients, caption = "Coefficients du modèle forward")
+cat("\nR-squared ajusté :", round(summary(forward_model)$adj.r.squared, 4), "\n")
+```
+
+```{r backward-selection, results='asis'}
+# Sélection backward
+backward_model <- step(full_model, direction = "backward", trace = 0)
+
+# Résumé du modèle backward
+cat("\n### Résumé du modèle sélectionné (Backward)\n")
+kable(summary(backward_model)$coefficients, caption = "Coefficients du modèle backward")
+cat("\nR-squared ajusté :", round(summary(backward_model)$adj.r.squared, 4), "\n")
+```
+
+```{r model-comparaison, results='asis'}
+# Comparaison des modèles
+comparison <- data.frame(
+  Model = c("Full Model", "Forward Selection", "Backward Selection"),
+  AIC = c(AIC(full_model), AIC(forward_model), AIC(backward_model)),
+  Adj_R_Squared = c(
+    summary(full_model)$adj.r.squared,
+    summary(forward_model)$adj.r.squared,
+    summary(backward_model)$adj.r.squared
+  )
+)
+
+cat("\n### Comparaison des modèles\n")
+kable(comparison, caption = "Comparaison des modèles de régression")
 ```
