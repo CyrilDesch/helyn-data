@@ -215,7 +215,7 @@ corr_table_sorted_by_demo <- corr_table %>%
 # Affiche toutes les corrélations, triées à l'intérieur de chaque VarDemo
 corr_table_sorted_by_demo
 ```
-Nous avons aussi étudié les 
+Nous avons également entrepris une analyse ciblée des variables démographiques en regroupant les données par type de variable. Cela nous a permis d’examiner les corrélations spécifiques entre chaque variable démographique et les proportions de votes. Pour ce faire, nous avons trié les corrélations au sein de chaque groupe démographique afin de mettre en évidence les relations les plus fortes et les plus significatives.
 
 À ce stade, nous nous sommes interrogés sur la possibilité de modéliser nos données en utilisant un simple modèle de régression linéaire. L’objectif était de déterminer si une telle approche pouvait capter les tendances observées et expliquer les variations des proportions de voix en fonction des différentes variables socio-démographiques.  
 
@@ -309,7 +309,8 @@ L’un des principaux problèmes rencontrés résidait dans la distribution dés
 
 ## Régression multiple
 
-IL ME MANQUE QUE CA, JE TOUCHE UN TRUC AU MODELE J4AI UNE IDEE
+En ce qui concerne la régression multiple, nous avons consacré un certain temps pour tester différentes combinaisons de variables afin de trouver des modèles offrant des résultats satisfaisants. Nous avons exploré plusieurs approches, notamment les sélections backward et forward, en essayant différentes configurations et en ajustant les paramètres. Malgré nos efforts, les résultats obtenus n’ont pas été convaincants : aucun modèle ne semblait réellement capable de capturer de manière significative les liens complexes entre les variables démographiques et les proportions de votes.
+
 
 ## Visualisation par la carte
 
