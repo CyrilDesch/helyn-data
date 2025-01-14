@@ -12,15 +12,14 @@ output:
   pdf_document: default  # Si un PDF est souhaité
 ---
 
---- 
+------------------------------------------------------------------------
 
-> **TODO** :  
-> - Vérifier qu'il n'y a plus de TODO dans le fichier.  
-> - Ajouter des images, diagrammes et extraits de code.  
-> - Ajouter des échantillons de données pour expliciter chaque étape.    
+> **TODO** :\
+> - Vérifier qu'il n'y a plus de TODO dans le fichier.\
+> - Ajouter des images, diagrammes et extraits de code.\
+> - Ajouter des échantillons de données pour expliciter chaque étape.
 
-```{r echo = FALSE, warning = FALSE, message = FALSE }
-# Not display
+```{r echo = FALSE, warning = FALSE,  message = FALSE, include = FALSE, results = 'hide'}
 library(readr)
 library(gt)
 library(dplyr)
@@ -32,15 +31,17 @@ library(doParallel)
 library(nnet)
 ```
 
---- 
+------------------------------------------------------------------------
 
 ## Introduction
 
 ### Problématique
-Prédire les résultats d'éléctions présidentielles française d'un bureau de vote.
 
-### Cadre théorique 
-Les préférences politiques des individus peuvent être façonnées par des variables socio-démographiques telles que l’âge, le niveau d’éducation, la situation économique ou encore le lieu de résidence. Plusieurs cadres théoriques permettent de formuler des hypothèses sur ces influences potentielles.
+Prédire les résultats d'éléctions présidentielles française d'un bureau de vote, dans l'idéal. Mais en réalité le but était surtout de trouver des correlations et dépendances entre les résultats d'éléctions présidentielles française d'un bureau de vote, et des données démographiques.
+
+### Cadre théorique
+
+Les préférences politiques des individus peuvent être façonnées par des variables socio-démographiques telles que l’âge, le niveau d’éducation, la situation économique ou encore le lieu de résidence. Nous voulions essayer d'observer des tendances que créent ces cadres théoriques. Plusieurs cadres théoriques permettent de formuler des hypothèses sur ces influences potentielles.
 
 La **théorie de la socialisation politique** suppose que des facteurs comme l’âge, le genre et la composition familiale jouent un rôle dans la formation des opinions politiques. Par exemple, on pourrait s’attendre à ce que les jeunes adultes soient plus attirés par des idées progressistes, tandis que les générations plus âgées privilégient des positions conservatrices, influencées par leurs expériences passées.
 
@@ -55,51 +56,51 @@ La **théorie de la privation relative** suggère que les inégalités perçues 
 Enfin, la **théorie du choix rationnel** propose que les électeurs adoptent des comportements stratégiques, en cherchant à maximiser leurs bénéfices individuels à travers leurs choix politiques. Par exemple, les propriétaires immobiliers ou les ménages vivant seuls pourraient orienter leurs votes en fonction des politiques perçues comme avantageuses ou défavorables à leurs intérêts.
 
 ### Modèle de l’étude
+
 Quel lien existe entre les différents facteurs socio-démographiques et influencent-ils les choix politiques des citoyens ?
 
 ### Objectifs de l’étude
+
 L’objectif est d'explorer ces hypothèses théoriques en s'appuyant sur des données socio-démographiques et électorales de plusieurs années. Cette étape théorique permet de poser les bases d’une analyse empirique qui pourra confirmer ou infirmer ces hypothèses en fonction des observations. Nous étudierons les liens au travers de différentes techniques d'analyse statistiques.
 
----
+------------------------------------------------------------------------
 
 ## Identification et récupération des données
 
 ### Élections par bureau de vote
 
-D’après le cadre théorique, la première étape consiste à collecter les résultats des élections présidentielles. Pour enrichir notre jeu de données, nous avons choisi de les détailler au niveau des bureaux de vote. La plateforme *data.gouv.fr* nous donne accès à ce type de données. Lors de chaque élection, environ 70 000 bureaux de vote partagent leurs résultats. Nous limiterons toutefois notre étude aux trois dernières élections présidentielles (2012, 2017 et 2022), ce qui sera largement suffisant pour répondre à notre problématique.  
+D’après le cadre théorique, la première étape consiste à collecter les résultats des élections présidentielles. Pour enrichir notre jeu de données, nous avons choisi de les détailler au niveau des bureaux de vote. La plateforme *data.gouv.fr* nous donne accès à ce type de données. Lors de chaque élection, environ 70 000 bureaux de vote partagent leurs résultats. Nous limiterons toutefois notre étude aux trois dernières élections présidentielles (2012, 2017 et 2022), ce qui sera largement suffisant pour répondre à notre problématique.
 
 De plus, nous nous concentrerons uniquement sur les bureaux de vote situés en France métropolitaine afin de simplifier la visualisation des données sur une carte. Cette restriction n’a qu’un faible impact sur la représentativité globale du jeu de données.
-
 
 ### Données socio-démographiques
 
 À partir du cadre théorique, nous avons identifié plusieurs groupes de facteurs socio-démographiques susceptibles d'influencer les orientations politiques des individus :
 
-- **Facteurs démographique** : ce groupe comprend des variables telles que l’âge, le genre et la composition familiale. Ces éléments permettent d'évaluer l’impact de la socialisation politique, notamment l'influence des générations et des expériences de vie sur le comportement électoral.
+-   **Facteurs démographique** : ce groupe comprend des variables telles que l’âge, le genre et la composition familiale. Ces éléments permettent d'évaluer l’impact de la socialisation politique, notamment l'influence des générations et des expériences de vie sur le comportement électoral.
 
-- **Facteurs travail et revenus** : ces variables incluent la catégorie socio-professionnelle, le type d'emploi (salarié ou indépendant), le taux d'activité et le niveau de vie. Elles permettent d'explorer le rôle des disparités économiques et de la hiérarchie sociale sur les préférences politiques, en lien avec la théorie du clivage de classe.  
+-   **Facteurs travail et revenus** : ces variables incluent la catégorie socio-professionnelle, le type d'emploi (salarié ou indépendant), le taux d'activité et le niveau de vie. Elles permettent d'explorer le rôle des disparités économiques et de la hiérarchie sociale sur les préférences politiques, en lien avec la théorie du clivage de classe.
 
-- **Facteurs éducation** : le niveau de diplôme et les qualifications constituent des indicateurs clés du capital culturel. Ces données sont utiles pour comprendre la manière dont l'accès au savoir et la formation influencent la perception des enjeux politiques.
+-   **Facteurs éducation** : le niveau de diplôme et les qualifications constituent des indicateurs clés du capital culturel. Ces données sont utiles pour comprendre la manière dont l'accès au savoir et la formation influencent la perception des enjeux politiques.
 
-- **Facteurs lieu de vie** : ce groupe comprend des variables liées au lieu de résidence, telles que la répartition urbaine ou rurale, la proportion de logements sociaux, et l’ancienneté des constructions. Ces éléments permettent d'examiner l'impact du contexte spatial et des interactions sociales locales sur le vote.  
+-   **Facteurs lieu de vie** : ce groupe comprend des variables liées au lieu de résidence, telles que la répartition urbaine ou rurale, la proportion de logements sociaux, et l’ancienneté des constructions. Ces éléments permettent d'examiner l'impact du contexte spatial et des interactions sociales locales sur le vote.
 
-- **Facteurs conditions de vie** : le taux de pauvreté, la précarité de l’emploi et la composition des ménages permettent de mesurer le sentiment de privation relative et son effet potentiel sur l'adhésion à des mouvements politiques contestataires.  
+-   **Facteurs conditions de vie** : le taux de pauvreté, la précarité de l’emploi et la composition des ménages permettent de mesurer le sentiment de privation relative et son effet potentiel sur l'adhésion à des mouvements politiques contestataires.
 
-- **Facteurs mode de vie** : certaines variables, comme la propriété immobilière ou la structure des ménages (par exemple, vivre seul ou en famille), peuvent refléter des comportements électoraux stratégiques, en lien avec des choix rationnels visant à préserver ou à optimiser une situation personnelle.  
+-   **Facteurs mode de vie** : certaines variables, comme la propriété immobilière ou la structure des ménages (par exemple, vivre seul ou en famille), peuvent refléter des comportements électoraux stratégiques, en lien avec des choix rationnels visant à préserver ou à optimiser une situation personnelle.
 
 Certaines de ces données ont été directement récupérées sur le site de l'INSEE, via des études ou des cartes interactives avec export de données (par exemple, statistiques-locales.insee.fr). Ces données étant regroupées par commune, nous avons pu les répartir proportionnellement entre les bureaux de vote en fonction du nombre de votants.
 
 En revanche, la collecte des données concernant les revenus, le lieu de vie et les conditions de vie a été plus complexe. Ces données sont fournies sous forme de « carreaux » géographiques de 200 mètres de côté. Il a donc été nécessaire de récupérer les contours géographiques des bureaux de vote, de convertir et harmoniser les formats de coordonnées (CRS), puis de fusionner ces ensembles de données. La librairie R sf a été utilisée pour effectuer ces opérations, notamment en croisant les carreaux de 200 mètres avec les contours des bureaux de vote. Cette tâche s'est avérée chronophage en raison du coût computationnel élevé des calculs nécessaires pour chaque opération. Certaines données ont dû être additionnées, d'autres moyennées. Une vérification finale a montré une perte de seulement 0,01 % des données, ce qui constitue un excellent résultat pour ce type de fusion géographique.
 
---- 
+------------------------------------------------------------------------
 
-## Nettoyage et fusion des données 
+## Nettoyage et fusion des données
 
-Les données ont été vérifiées afin d’éviter les valeurs aberrantes et garantir leur cohérence. Certaines transformations ont également été effectuées pour faciliter la visualisation et les rendre compatibles avec notre modèle d'analyse.  
+Le point de centralisation des données finales est le **code bureau de vote**, un identifiant unique attribué à chaque bureau de vote.
 
-Le point de centralisation des données est le *"code bureau de vote"*, un identifiant unique attribué à chaque bureau de vote.
+### Traitement des données électorales
 
-### Traitement des données électorales  
 Pour les résultats des élections, il a d'abord été nécessaire de transformer la liste des votes par candidat dans chaque bureau de vote en catégories agrégées correspondant aux principaux courants politiques : Extrême Gauche, Gauche, Centre, Droite et Extrême Droite. Cette étape permet de simplifier l'analyse des tendances politiques tout en conservant une granularité suffisante.
 
 Une colonne "Code" a été ajoutée en combinant les codes du département, de la commune et du bureau de vote, ce qui facilite la fusion avec d'autres jeux de données. Certaines colonnes, telles que les noms des départements ou les pourcentages inutiles (ex. : % Abstentions/Inscrits), ont été supprimées pour alléger le jeu de données. Une colonne "nonExp" a été créée pour regrouper les bulletins blancs et nuls. Cette information nous aide à mieux comprendre les niveaux de participation et de contestation.
@@ -112,14 +113,15 @@ Un extrait des données nettoyées et organisées est présenté ci-dessous :
 
 library(readxl)
 library(gt)
-data <- read_excel("./cleanData/elections/resultats-burvot-t1-presidentielle_2022V2.xlsx")
+data <- read_excel("./cleanData/elections/resultats-burvot-t1-presidentielle_2022.xlsx")
 head(data, 3) %>%
   gt()
 
 ```
 
 ### Traitement des données socio-démographiques
-Concernant les facteurs socio-démographiques, certaines données étaient déjà disponibles au niveau des bureaux de vote, tandis que d’autres étaient regroupées au niveau communal. Ces dernières ont été réparties entre les bureaux de vote en suivant une répartition proportionnelle basée sur le nombre de votants, comme décrit précédemment.
+
+Concernant les facteurs socio-démographiques, certaines données étaient déjà disponibles au niveau des bureaux de vote, tandis que d’autres étaient regroupées au niveau communal. Ces dernières ont été réparties entre les bureaux de vote en suivant une répartition proportionnelle basée sur le nombre de votants, comme décrit précédemment. Les données ont ensuite été allégé et les colonnes renommés pour améliorer la lisibilité globale des données. Les colonnes inutiles ont été supprimé, pour éviter de garder des informations superflues.
 
 Afin de préparer la visualisation de nos données sur des cartes, nous avons conservé un fichier spatial au format GeoJSON contenant les contours des bureaux de vote, identifiés par l'ID code_bureau_vote. Ce fichier, d'une taille de 600 Mo, a été isolé pour éviter de ralentir le traitement des données lors des analyses statistiques. En cas de besoin, il peut être facilement fusionné avec notre jeu de données pour générer des visualisations cartographiques.
 
@@ -138,16 +140,17 @@ head(data, 3) %>%
   gt()
 ```
 
---- 
+------------------------------------------------------------------------
 
 ## Data Mining Descriptif (analyse statistique simple chi2 et tout)
 
-L'analyse des données doit être la plus précise possible. Pour cela, nous avons choisi de créer un jeu de données intermédiaire qui élimine la duplication des bureaux de vote sur plusieurs années. Nous sélectionnerons aléatoirement une seule observation par bureau de vote parmi différentes années afin d’éviter un biais de similitude. En effet, un bureau ayant historiquement voté à droite a de fortes chances de continuer à voter de la même manière, ce qui pourrait fausser l’analyse si nous incluons plusieurs observations temporelles sans ajustement.  
+L'analyse des données doit être la plus précise possible. Pour cela, nous avons choisi de créer un jeu de données intermédiaire qui élimine la duplication des bureaux de vote sur plusieurs années. Nous sélectionnerons aléatoirement une seule observation par bureau de vote parmi différentes années afin d’éviter un biais de similitude. En effet, un bureau ayant historiquement voté à droite a de fortes chances de continuer à voter de la même manière, ce qui pourrait fausser l’analyse si nous incluons plusieurs observations temporelles sans ajustement.
 
-Nous ajoutons également une variable score comprise entre 0 et 1, qui indique l’orientation politique moyenne :  
-- 0 correspond à l’extrême gauche,  
-- 0.5 représente le centre,  
-- 1 correspond à l’extrême droite.  
+Nous ajoutons également une variable score comprise entre 0 et 1, qui indique l’orientation politique moyenne :\
+- 0 correspond à l’extrême gauche,\
+- 0.5 représente le centre,\
+- 1 correspond à l’extrême droite.
+
 ```{r}
 data <- data %>%
   mutate(
@@ -169,6 +172,7 @@ borne_inf <- score_moyen - quant_stud * sqrt(score_var/n)
 borne_sup <- score_moyen + quant_stud * sqrt(score_var/n)
 paste(borne_inf, "<", score_moyen, "<", borne_sup)
 ```
+
 Cela indique que l’orientation politique française actuelle se situe plutôt au centre-droit.
 
 Notre objectif initial est d'explorer la corrélation entre le niveau de richesse et l'orientation politique. Les politiques de droite étant souvent perçues comme plus favorables aux personnes disposant de revenus élevés, il est raisonnable d’anticiper une corrélation positive entre un haut niveau de richesse et un soutien aux partis de droite.
@@ -189,9 +193,8 @@ head(analys_data, 3) %>%
   gt()
 ```
 
-  
 Observons rapidement la répartition des richesses en fonction des votes:
-  
+
 ```{r echo = FALSE, warning = FALSE, message = FALSE }
 lims <- quantile(analys_data$niveau_vie_total, probs = c(0.01, 0.99), na.rm = TRUE)
 
@@ -222,9 +225,9 @@ ggplot(analys_data_clean, aes(x = pourcentage_voix_votant_ed, y = niveau_vie_tot
   theme_minimal()
 ```
 
-On constate qu'effectivement le niveau de vie semble impacter le pourcentage de voix d'extrême gauche mais n'explique pas tout. Pour ce qui est de l'extrème droite, on observe une grande répartition donc le niveau de vie ne semble pas un facteur premier. Mais il y a tout de même cette tendance, ce qui laisse penser que la pauvreté pousse à voté dans les extrêmes.   
+On constate qu'effectivement le niveau de vie semble impacter le pourcentage de voix d'extrême gauche mais n'explique pas tout. Pour ce qui est de l'extrème droite, on observe une grande répartition donc le niveau de vie ne semble pas un facteur premier. Mais il y a tout de même cette tendance, ce qui laisse penser que la pauvreté pousse à voté dans les extrêmes.
 
-Comparons maintenant avec notre score :  
+Comparons maintenant avec notre score :
 
 ```{r echo = FALSE, warning = FALSE, message = FALSE }
 
@@ -245,6 +248,7 @@ ggplot(analys_data_clean, aes(x = score_orientation, y = niveau_vie_total)) +
     text = element_text(size = 12)           # Ajuste la taille du texte
   )
 ```
+
 Nous cherchons une diagonale allant de l'angle inférieur gauche vers l'angle supérieur droit. Ce n'est pas le cas ici, ce qui indique que l'influence de la richesse sur les votes n'est pas significative lorsqu'elle est observée isolément. En revanche, notre théorie est confirmée : plus le niveau de richesse est faible, plus les votes pour les extrêmes augmentent.
 
 En conclusion, la richesse permet simplement d'expliquer qu'un niveau de vie bas est associé à une probabilité plus élevée de vote pour les extrêmes.
@@ -281,7 +285,7 @@ ggsave("scatterplot_matrix.png", plot = p, width = 12, height = 8, dpi = 300)
 p
 ```
 
-Cette matrice de graphiques en dispersions nous donne un bonne aperçu de quel variables seront intéressantes à étudier. 
+Cette matrice de graphiques en dispersions nous donne un bonne aperçu de quel variables seront intéressantes à étudier.
 
 #### Par un modèle
 
@@ -343,16 +347,17 @@ saveRDS(rf_model, file = "big_score_rf_model.rds")
 
 ```
 
-
---- 
+------------------------------------------------------------------------
 
 ## Recherche de corrélation poussé (utilisation de modèle etc...)
 
 ### <modèle>
+
 #### optimisation des paramètres
+
 #### mesure qualité
 
----
+------------------------------------------------------------------------
 
 ## Synthèse
 
@@ -364,8 +369,8 @@ En 2017 et en 2022, le bleu est beaucoup plus représenté, notamment dans le No
 
 Cependant, certaines régions ont conservé une certaine stabilité dans leurs choix politiques. La Bretagne, par exemple, reste l’une des régions où le vote à gauche est resté dominant et où les évolutions dans les tendances politiques sont beaucoup moins marquées.
 
-<div style="display: flex; justify-content: space-between;">
+::: {style="display: flex; justify-content: space-between;"}
 ```{r echo=FALSE, out.width="32%", fig.show='hold', fig.cap=c("*Élection présidentielle 2012*", "*Élection présidentielle 2017*", "*Élection présidentielle 2022*")}
 knitr::include_graphics(c("France-2012.png", "France-2017.png", "France-2022.png"))
 ```
-
+:::
