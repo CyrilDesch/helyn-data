@@ -37,6 +37,8 @@ library(caret)
 library(ranger)
 library(doParallel)
 library(nnet)
+library(iml)
+library(tibble)
 ```
 
 ------------------------------------------------------------------------
@@ -150,8 +152,7 @@ Afin de préparer la visualisation de nos données sur des cartes, nous avons co
 Ces étapes ont permis de disposer d’un jeu de données homogène et prêt pour l'analyse statistique des corrélations entre les variables socio-démographiques et les résultats électoraux. Voici un échantillon des 72 colonnes finales :
 
 ```{r echo = FALSE, warning = FALSE, message = FALSE }
-library(readr)
-library(gt)
+
 ##data <- read_csv("./cleanData/merge_data_all_years.csv", show_col_types = FALSE)
 data <- read_csv("./cleanData/merge_data_all_years.csv", show_col_types = FALSE)
 
@@ -164,7 +165,7 @@ head(data, 3) %>%
 
 ------------------------------------------------------------------------
 
-## Data Mining Descriptif (analyse statistique simple chi2 et tout)
+## Data Mining Descriptif
 
 L'analyse des données doit être la plus précise possible. Pour cela, nous avons choisi de créer un jeu de données intermédiaire qui élimine la duplication des bureaux de vote sur plusieurs années. Nous sélectionnerons aléatoirement une seule observation par bureau de vote parmi différentes années afin d’éviter un biais de similitude. En effet, un bureau ayant historiquement voté à droite a de fortes chances de continuer à voter de la même manière, ce qui pourrait fausser l’analyse si nous incluons plusieurs observations temporelles sans ajustement.
 
@@ -181,7 +182,8 @@ data <- data %>%
           (voix_eg + voix_g + voix_c + voix_d + voix_ed),
         2
       )
-  )
+  ) %>%
+  filter(!is.na(score_orientation))
 
 score_moyen <- mean(data$score_orientation)
 
@@ -275,51 +277,153 @@ Nous cherchons une diagonale allant de l'angle inférieur gauche vers l'angle su
 
 En conclusion, la richesse permet simplement d'expliquer qu'un niveau de vie bas est associé à une probabilité plus élevée de vote pour les extrêmes.
 
+### Impact du nombre d'individu
+
+Beaucoup de variable étant des quantités, il est intéressant de plutôt utiliser des proportions. Il faut également supprimer les colonnes inutiles car déjà représenté par d'autres (ex: Taux homme et Nb d'homme).
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+transform_custom_proportion <- function(df) {
+  # Dictionnaire des colonnes avec leurs colonnes de référence pour la division
+  reference_map <- list(
+    votants = c("non_exp", "nb_non_scolarises", "niveau_vie_total", "nb_menages", "nb_emplois_lt"),
+    nb_menages = c("nb_menages_pauvres", "nb_menages_seul", "nb_menages_5plus", "nb_menages_proprietaires", "nb_menages_monoparentaux", "surface_totale_logements", "nb_logements_collectifs", "nb_logements_maisons", "nb_log_avant_1945", "nb_log_1945_1969", "nb_log_1970_1989", "nb_log_apres_1990", "nb_log_date_inconnue", "nb_logements_sociaux"),
+    nb_h_total = c("nb_h_15_24", "nb_h_25_64", "nb_h_65"),
+    nb_f_total = c("nb_f_15_24", "nb_f_25_64", "nb_f_65")
+  )
+  
+  # Liste des colonnes à supprimer
+  cols_to_remove <- c()
+  
+  # Appliquer les transformations
+  for (ref_col in names(reference_map)) {
+    target_cols <- reference_map[[ref_col]]
+    
+    # Vérification : Si la colonne de référence existe et a des valeurs non nulles
+    if (ref_col %in% names(df) && any(!is.na(df[[ref_col]]))) {
+      for (col in target_cols) {
+        if (col %in% names(df)) {
+          # Nouveau nom pour la colonne proportionnelle
+          new_col_name <- paste0(col, "_prop_", ref_col)
+          
+          # Créer la nouvelle colonne proportionnelle
+          df[[new_col_name]] <- ifelse(df[[ref_col]] > 0, df[[col]] / df[[ref_col]], NA)
+          
+          # Ajouter l'ancienne colonne à la liste de suppression
+          cols_to_remove <- c(cols_to_remove, col)
+        }
+      }
+    }
+  }
+  
+  # Supprimer les colonnes d'origine après transformation
+  df <- df[, !(names(df) %in% cols_to_remove)]
+  
+  # Fonction pour supprimer les valeurs aberrantes avec les percentiles 2% et 98%
+  remove_outliers <- function(x) {
+    if (is.numeric(x)) {
+      lower_bound <- quantile(x, 0.00005, na.rm = TRUE)
+      upper_bound <- quantile(x, 0.99995, na.rm = TRUE)
+      x[x < lower_bound | x > upper_bound] <- NA
+    }
+    return(x)
+  }
+  
+  # Appliquer la suppression des valeurs aberrantes sur toutes les colonnes
+  df <- as.data.frame(lapply(df, remove_outliers))
+  
+  return(df)
+}
+
+# Appliquer la transformation et suppression sur le dataset "data"
+clean_data <- transform_custom_proportion(data)
+clean_data <- clean_data %>%
+  select(-contains("population_ratio"), -contains("nb_25"), -contains("nb_25_64"), -contains("nb_65"), -contains("population_totale"), -contains("nb_h_total"), -contains("nb_f_total"), -contains("voix_eg"), -contains("voix_g"), -contains("voix_c"), -contains("voix_d"), -contains("voix_ed"), -contains("code_insee"), -contains("libelle"))
+
+# Afficher les premières lignes
+head(clean_data)
+```
+
 ### Recherche globale
 
 #### Par visualisation
 
-Comme nous venons de le voir, il est intéressant de ploter notre score face à nos différentes données, nous allons donc tous les tester rapidement et essayer d'observer.
+Comme nous l'avons vu précédemment, il est intéressant de ploter notre score face à nos différentes données, nous allons donc tous les tester rapidement et essayer d'observer.
 
-```{r}
-analys_data_long <- analys_data_clean %>%
-  select(score_orientation, where(is.numeric)) %>%
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+# Ajouter une colonne catégorielle pour regrouper par classe d'orientation politique
+clean_data <- clean_data %>%
+  mutate(
+    orientation_class = case_when(
+      score_orientation >= 0 & score_orientation < 0.2 ~ "Extrême gauche",
+      score_orientation >= 0.2 & score_orientation < 0.4 ~ "Gauche",
+      score_orientation >= 0.4 & score_orientation < 0.6 ~ "Centre",
+      score_orientation >= 0.6 & score_orientation < 0.8 ~ "Droite",
+      score_orientation >= 0.8 & score_orientation <= 1 ~ "Extrême droite"
+    )
+  ) %>%
+  filter(!is.na(orientation_class))
+
+# Transformer les données au format long pour les barplots
+analys_data_long <- clean_data %>%
+  select(orientation_class, where(is.numeric)) %>%
   select(-contains("voix")) %>%
   pivot_longer(
-    cols = -score_orientation,
+    cols = -orientation_class,
     names_to = "variable",
     values_to = "value"
   )
 
-p <- ggplot(analys_data_long, aes(x = score_orientation, y = value)) +
-  geom_point(alpha = 0.7, color = "blue") +
+# Calcul des moyennes par classe pour chaque variable
+mean_values <- analys_data_long %>%
+  group_by(orientation_class, variable) %>%
+  summarise(mean_value = mean(value, na.rm = TRUE), .groups = "drop")
+
+# Barplot des moyennes
+p <- ggplot(mean_values, aes(x = orientation_class, y = mean_value, fill = orientation_class)) +
+  geom_bar(stat = "identity", position = "dodge") +
   facet_wrap(~ variable, scales = "free_y") +
   labs(
-    title = "Score d'orientation vs. autres variables",
-    x = "Score (0 = Extrême gauche, 1 = Extrême droite)",
-    y = "Variables"
+    title = "Moyenne des variables par classe d'orientation politique",
+    x = "Classe d'orientation",
+    y = "Moyenne des variables"
   ) +
-  theme_minimal()
+  scale_x_discrete(limits = c("Extrême gauche", "Gauche", "Centre", "Droite", "Extrême droite")) +  # Assurer l'ordre sur l'axe des X
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "none"  # Retirer la légende si elle devient redondante
+  )
 
-# Export en image pour une meilleur lecture
-ggsave("scatterplot_matrix.png", plot = p, width = 12, height = 8, dpi = 300)
+# Export en image pour une meilleure lecture
+ggsave("barplot_matrix.png", plot = p, width = 15, height = 8, dpi = 300)
 
+# Affichage du graphique
 p
+
 ```
 
-Cette matrice de graphiques en dispersions nous donne un bonne aperçu de quel variables seront intéressantes à étudier.
+![](barplot_matrix.png)  
 
-#### Par un modèle
+Cette matrice de graphiques en dispersions nous donne un bonne aperçu de quel variables seront intéressantes à étudier. 
+
+## Recherche de corrélations poussées
+
+### Random forest (via ranger)
+
+#### Entrainement 
 
 ```{r eval=FALSE}
 # Préparation des données
-df_model <- data %>%
- group_by(code_bureau_vote) %>%
- slice_sample(n = 1) %>%
- ungroup() %>%
- select(where(is.numeric)) %>%
- select(-contains("voix"), -contains("non_exp")) %>%
- filter(!is.na(score_orientation))
+df_model <- clean_data %>%
+  group_by(code_bureau_vote) %>%
+  slice_sample(n = 1) %>%
+  ungroup() %>%
+  select(where(is.numeric)) %>%
+  select(-contains("voix")) %>%
+  filter(!is.na(score_orientation)) %>%
+  slice_sample(n = 100)
+
+write.csv(df_model, file = "big_score_training_data.csv", row.names = FALSE)
 
 nzv <- nearZeroVar(df_model, saveMetrics = TRUE)
 df_model <- df_model[, !nzv$nzv]
@@ -332,11 +436,11 @@ cl <- makeCluster(num_cores)
 registerDoParallel(cl)
 
 train_ctrl <- trainControl(
- method        = "repeatedcv",
- number        = 5,
- repeats       = 3,
- verboseIter   = FALSE,
- allowParallel = TRUE
+  method        = "repeatedcv",
+  number        = 5,
+  repeats       = 3,
+  verboseIter   = TRUE,
+  allowParallel = FALSE
 )
 
 tune_grid <- expand.grid(
@@ -360,23 +464,143 @@ rf_model <- train(
  importance = "impurity"
 )
 
-print(rf_model)
-plot(rf_model)
-varImp(rf_model)
-
 stopCluster(cl)
-saveRDS(rf_model, file = "big_score_rf_model.rds")
+saveRDS(rf_model, file = "big_score_model.rds")
+
 ```
 
-------------------------------------------------------------------------
+### Etude du modèle
 
-## Recherche de corrélation poussé (utilisation de modèle etc...)
+On commence par extraire les variables significatives de la random forest :    
 
-### <modèle>
+```{r eval=FALSE}
+# Charger le modèle depuis le fichier RDS
+rf_model <- readRDS("big_score_model.rds")
 
-#### optimisation des paramètres
+# Extraire l'importance des variables
+importance_vars <- varImp(rf_model, scale = FALSE)
+importance_df <- as.data.frame(importance_vars$importance)
+importance_df$variable <- rownames(importance_df)
 
-#### mesure qualité
+# Trier par importance décroissante
+importance_df <- importance_df[order(-importance_df$Overall), ]
+
+# Choisir un seuil d'importance (exemple : garder les variables dont l'importance est supérieure à 5% du max)
+seuil <- 0.05 * max(importance_df$Overall)
+selected_vars <- importance_df[importance_df$Overall >= seuil, ]
+selected_vars
+```
+
+Puis on peut essayer d'analyser des profils types et les variables qui influent :  
+
+```{r eval=FALSE}
+# Charger le dataset depuis le fichier CSV
+model_data <- read.csv("big_score_training_data.csv")
+
+# Sélection des colonnes utilisées dans le modèle
+model_vars <- setdiff(colnames(model_data), "score_orientation")
+
+# Fonction pour extraire plusieurs observations par tranche de `score_orientation`
+extract_observations_group <- function(data, lower_bound, upper_bound, model_vars, n = 20) {
+  data %>%
+    filter(score_orientation >= lower_bound, score_orientation < upper_bound) %>%
+    select(all_of(c(model_vars, "score_orientation"))) %>%
+    slice_sample(n = n)  # Prendre des observations aléatoires
+}
+
+# Création des 5 groupes d'observations
+X_group1 <- extract_observations_group(model_data, 0.0, 0.2, model_vars, n = 20)
+X_group2 <- extract_observations_group(model_data, 0.2, 0.4, model_vars, n = 20)
+X_group3 <- extract_observations_group(model_data, 0.4, 0.6, model_vars, n = 20)
+X_group4 <- extract_observations_group(model_data, 0.6, 0.8, model_vars, n = 20)
+X_group5 <- extract_observations_group(model_data, 0.8, 1.0, model_vars, n = 20)
+
+# Fonction pour calculer la moyenne des valeurs SHAP pour un groupe d'observations
+compute_shapley_mean <- function(predictor, x_interest_group) {
+  shapley_results <- lapply(1:nrow(x_interest_group), function(i) {
+    x_interest <- x_interest_group[i, , drop = FALSE]
+    shapley <- Shapley$new(predictor, x.interest = x_interest)
+    shapley$results %>% mutate(observation_id = i)
+  })
+  
+  shapley_combined <- do.call(rbind, shapley_results)
+  shapley_mean <- shapley_combined %>%
+    group_by(feature) %>%
+    summarise(mean_phi = mean(abs(phi)), .groups = 'drop')
+  
+  return(shapley_mean)
+}
+
+# Calcul des valeurs SHAP moyennes pour chaque groupe
+shapley_mean1 <- compute_shapley_mean(predictor, X_group1)
+shapley_mean2 <- compute_shapley_mean(predictor, X_group2)
+shapley_mean3 <- compute_shapley_mean(predictor, X_group3)
+shapley_mean4 <- compute_shapley_mean(predictor, X_group4)
+shapley_mean5 <- compute_shapley_mean(predictor, X_group5)
+
+# Visualisation des profils types par tranche
+plot_shapley_profile <- function(shapley_mean, title) {
+  ggplot(shapley_mean, aes(x = reorder(feature, -mean_phi), y = mean_phi)) +
+    geom_bar(stat = "identity", fill = "steelblue") +
+    coord_flip() +
+    labs(title = title, x = "Feature", y = "Valeur SHAP moyenne (abs)") +
+    theme_minimal()
+}
+
+# Plots des profils types pour chaque tranche
+plot_shapley_profile(shapley_mean1, "Profil type pour la tranche [0.0 - 0.2[")
+plot_shapley_profile(shapley_mean2, "Profil type pour la tranche [0.2 - 0.4[")
+plot_shapley_profile(shapley_mean3, "Profil type pour la tranche [0.4 - 0.6[")
+plot_shapley_profile(shapley_mean4, "Profil type pour la tranche [0.6 - 0.8[")
+plot_shapley_profile(shapley_mean5, "Profil type pour la tranche [0.8 - 1.0]")
+
+# Fonction pour calculer la moyenne des valeurs SHAP par groupe de variables
+compute_shapley_influence <- function(shapley_means) {
+  shapley_means %>%
+    mutate(Group = case_when(
+      grepl("prop|population", feature) ~ "Démographie",
+      grepl("emplois|ouvriers|employes", feature) ~ "Emploi",
+      grepl("menages|logements", feature) ~ "Habitation",
+      TRUE ~ "Autre"
+    )) %>%
+    group_by(Group) %>%
+    summarise(
+      mean_phi = mean(mean_phi),
+      sd_phi = sd(mean_phi),
+      .groups = 'drop'
+    ) %>%
+    arrange(desc(mean_phi))
+}
+
+# Calculer les moyennes SHAP pour chaque groupe d'observations
+shapley_mean1_grouped <- compute_shapley_influence(shapley_mean1)
+shapley_mean2_grouped <- compute_shapley_influence(shapley_mean2)
+shapley_mean3_grouped <- compute_shapley_influence(shapley_mean3)
+shapley_mean4_grouped <- compute_shapley_influence(shapley_mean4)
+shapley_mean5_grouped <- compute_shapley_influence(shapley_mean5)
+
+# Visualisation de la dispersion des valeurs SHAP par groupe
+plot_group_distribution <- function(shapley_means, title) {
+  ggplot(shapley_means, aes(x = Group, y = mean_phi, fill = Group)) +
+    geom_boxplot(outlier.color = "red", outlier.shape = 1) +
+    geom_jitter(width = 0.2, alpha = 0.5) +
+    labs(
+      title = title,
+      x = "Groupes de variables",
+      y = "Valeur SHAP (importance absolue)"
+    ) +
+    theme_minimal() +
+    theme(plot.title = element_text(hjust = 0.5))
+}
+
+# Plots pour chaque tranche de score
+plot_group_distribution(shapley_mean1_grouped, "Distribution des valeurs SHAP [0.0 - 0.2[")
+plot_group_distribution(shapley_mean2_grouped, "Distribution des valeurs SHAP [0.2 - 0.4[")
+plot_group_distribution(shapley_mean3_grouped, "Distribution des valeurs SHAP [0.4 - 0.6[")
+plot_group_distribution(shapley_mean4_grouped, "Distribution des valeurs SHAP [0.6 - 0.8[")
+plot_group_distribution(shapley_mean5_grouped, "Distribution des valeurs SHAP [0.8 - 1.0]")
+```
+
 
 ------------------------------------------------------------------------
 
