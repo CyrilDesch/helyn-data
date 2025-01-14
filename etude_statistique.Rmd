@@ -830,13 +830,6 @@ knitr::include_graphics("profil_type_extreme_gauche.png")
 >  
 
 ```{r echo=FALSE, out.width = "500px"}
-knitr::include_graphics("profil_type_extreme_gauche.png")
-```
-
-> **INTERPRETER**  
->  
-
-```{r echo=FALSE, out.width = "500px"}
 knitr::include_graphics("profil_type_gauche.png")
 ```
 
