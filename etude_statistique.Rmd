@@ -664,7 +664,7 @@ selected_vars
 
 On peut en conclure que des facteurs tels que la proportion de logements collectifs, de maisons et leur taille influencent l'orientation des votes au sein d'un bureau de vote. On observe également l'influence de facteurs liés à l'emploi, comme la proportion d'ouvriers et d'employés. Ces éléments seront décrits plus en détail lors de la synthèse.  
 
-Enfin, nous pouvons analyser des profils types et identifier les variables qui influencent ces profils. Pour cela, nous effectuons des prédictions à partir de notre modèle tout en catégorisant les observations afin d'examiner, pour chaque catégorie, les principales variables influentes. Nous utilisons la méthode de Shapley et les valeurs SHAP pour déterminer ces contributions. Voici les diagrammes correspondants :
+Enfin, nous pouvons analyser des profils types et identifier les variables qui influencent ces profils. Pour cela, nous effectuons des prédictions à partir de notre modèle tout en catégorisant les observations afin d'examiner, pour chaque catégorie, les principales variables influentes. Nous utilisons la méthode de Shapley et les valeurs SHAP pour déterminer ces contributions. Ces résultats doivent être interprétés avec prudence, car la random forest établit des liens entre les données, ce qui peut introduire un biais et ne pas refléter des causalités directes. Voici les diagrammes correspondants :
 
 ```{r eval=FALSE, echo = FALSE, warning = FALSE, message = FALSE}
 # Charger le dataset depuis le fichier CSV
