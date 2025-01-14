@@ -27,18 +27,24 @@ body {text-align: justify}
 > - Ajouter des images, diagrammes et extraits de code.\
 > - Ajouter des échantillons de données pour expliciter chaque étape.
 
-```{r echo = FALSE, warning = FALSE,  message = FALSE, include = FALSE, results = 'hide'}
+```{r echo = FALSE, warning = FALSE,  message = FALSE, include=FALSE, results = 'hide'}
 library(readr)
+library(readxl)
 library(gt)
 library(dplyr)
+library(corrplot)
 library(ggplot2)
 library(tidyr)
 library(caret)
 library(ranger)
 library(doParallel)
 library(nnet)
+<<<<<<< HEAD
 library(iml)
 library(tibble)
+=======
+
+>>>>>>> aed9d0b (Feat : rapport regression)
 ```
 
 ------------------------------------------------------------------------
@@ -164,6 +170,136 @@ head(data, 3) %>%
 ```
 
 ------------------------------------------------------------------------
+## Correlation
+
+Ensuite, nous avons cherché à analyser les corrélations entre nos données de vote et nos données socio-démographiques. Dans un premier temps, nous avons tenté de relier le nombre de votes aux autres variables. Cependant, nous nous sommes rapidement rendu compte que cette approche introduisait un biais : en utilisant le nombre de votes, nous observions systématiquement une corrélation avec les autres données. Cela s’explique par le fait que l’augmentation de la taille d’une commune entraîne mécaniquement une augmentation du nombre de ménages, d’habitants, et donc du nombre de votes.
+
+Nous avons donc décidé de passer à l’analyse des proportions de voix afin d’éliminer ce biais lié à la taille des communes. En utilisant les proportions de votes exprimées pour chaque catégorie, nous avons pu observer les corrélations entre ces proportions et nos données socio-démographiques. Certaines variables se sont révélées particulièrement significatives, comme la proportion d’employés (part_employé) et celle d’ouvriers (part_ouvrier), qui présentaient des relations notables avec les résultats des votes.
+
+```{r correlation-matrice}
+# Colonnes liées aux votes
+vote_cols <- c(
+  "pourcentage_voix_votant_eg", "pourcentage_voix_votant_g", 
+  "pourcentage_voix_votant_c", "pourcentage_voix_votant_d", 
+  "pourcentage_voix_votant_ed"
+)
+vote_cols2 <- c(
+  "votants", "non_exp", "voix_eg", "pourcentage_voix_votant_eg", 
+  "voix_g", "pourcentage_voix_votant_g", "voix_c", "pourcentage_voix_votant_c", 
+  "voix_d", "pourcentage_voix_votant_d", "voix_ed", "pourcentage_voix_votant_ed"
+)
+
+# Séparation des colonnes numériques en votes et démographie
+df_vote <- donnees %>% select(any_of(vote_cols))
+df_demo <- donnees %>% select(any_of(setdiff(names(donnees %>% select_if(is.numeric)), vote_cols2)))
+
+# Calcul des corrélations entre votes et données démographiques
+corr_vote_demo <- cor(df_vote, df_demo, use = "pairwise.complete.obs")
+corr_vote_demo
+
+# On la transforme en tableau
+corr_table <- as.data.frame(as.table(corr_vote_demo))
+colnames(corr_table) <- c("VarVote", "VarDemo", "Correlation")
+
+# On trie selon la valeur absolue du coefficient
+corr_table_sorted <- corr_table[order(abs(corr_table$Correlation), decreasing = TRUE), ]
+
+# On affiche les 10 plus fortes corrélations
+head(corr_table_sorted, 40)
+```
+À ce stade, nous nous sommes interrogés sur la possibilité de modéliser nos données en utilisant un simple modèle de régression linéaire. L’objectif était de déterminer si une telle approche pouvait capter les tendances observées et expliquer les variations des proportions de voix en fonction des différentes variables socio-démographiques. 
+
+## Regression liénaire
+
+```{r all-regressions, echo=TRUE, warning=FALSE, message=FALSE}
+# Fonction pour générer un graphique avec p-values et R-squared
+generate_plot <- function(data, x_var, y_var, x_label, y_label, title) {
+  # Modèle de régression
+  model <- lm(as.formula(paste0(y_var, " ~ ", x_var)), data = data)
+  model_summary <- summary(model)
+  
+  # Affichage des résultats de la régression dans la console
+  cat("Résultats de la régression :", title, "\n")
+  print(model_summary)
+  cat("\n\n")
+  
+  # Extraction des p-values, R-squared
+  coef_pvalue <- signif(model_summary$coefficients[2, 4], 5) # P-value du coefficient
+  fstat_pvalue <- signif(pf(
+    model_summary$fstatistic[1],
+    model_summary$fstatistic[2],
+    model_summary$fstatistic[3],
+    lower.tail = FALSE
+  ), 5) # P-value de la F-statistic
+  r_squared <- signif(model_summary$r.squared, 5) # R-squared
+  
+  # Génération du graphique
+  ggplot(data, aes_string(x = x_var, y = y_var)) +
+    geom_point() +
+    geom_smooth(method = "lm", se = FALSE, color = "red") +
+    labs(
+      title = title,
+      x = x_label,
+      y = y_label
+    ) +
+    annotate(
+      "text",
+      x = max(data[[x_var]], na.rm = TRUE) * 0.8,
+      y = max(data[[y_var]], na.rm = TRUE) * 0.8,
+      label = paste0(
+        "R² = ", r_squared,
+        "\nP-val Coeff = ", coef_pvalue,
+        "\nP-val F-Stat = ", fstat_pvalue
+      ),
+      hjust = 0,
+      size = 4,
+      color = "blue"
+    )
+}
+
+# Liste des régressions à effectuer
+regressions <- list(
+  list(x = "part_employes", y = "pourcentage_voix_votant_eg", x_label = "Part des employés", y_label = "% Voix EG", title = "Régression linéaire : EG ~ part_employes"),
+  list(x = "part_employes", y = "pourcentage_voix_votant_c", x_label = "Part des employés", y_label = "% Voix C", title = "Régression linéaire : C ~ part_employes")
+  )
+
+# Générer et afficher les graphiques
+plots <- lapply(regressions, function(reg) {
+  generate_plot(
+    data = donnees,
+    x_var = reg$x,
+    y_var = reg$y,
+    x_label = reg$x_label,
+    y_label = reg$y_label,
+    title = reg$title
+  )
+})
+
+# Afficher les graphiques
+for (p in plots) print(p)
+```
+
+Nous avons donc entrepris de modéliser les relations entre les variables les plus prometteuses à l’aide de régressions linéaires. Dans un premier temps, nous avons effectué des analyses unitaires et observé des résultats plutôt encourageants. Par exemple, la proportion de votes d’un groupe spécifique montrait une forte corrélation avec la part d’employés (part_employé), indiquant un lien significatif entre ces deux variables (schéma ci dessus).
+
+Nous avons ensuite étendu cette approche à d’autres données, notamment celles relatives au travail plus généralement et à l’âge. Cependant, les résultats se sont avérés bien moins concluants. Les modèles de régression linéaire ne parvenaient pas à capturer efficacement les variations des proportions de votes en fonction de ces variables. Nous avons constaté que ces relations semblaient plus complexes et non linéaires, ce qui suggérait que des modèles plus sophistiqués pourraient être nécessaires pour mieux représenter ces interactions.
+
+En outre, l’analyse visuelle des données a révélé une limitation supplémentaire : les points sur les graphiques présentaient une distribution resserrée autour du centre, avec peu de variabilité dans les extrêmes. Cette forme compressée rendait difficile l’identification de tendances claires et limitait la capacité de la régression linéaire à fournir des prédictions robustes.
+
+Face à ces constats, nous avons conclu que la régression linéaire simple, bien qu’utile pour une première exploration, était insuffisante pour modéliser les liens complexes entre les variables socio-démographiques et les proportions de votes. Ces résultats ont souligné la nécessité d’envisager des approches plus avancées, telles que les régressions polynomiales, les modèles non linéaires ou encore des algorithmes d’apprentissage automatique, pour capturer des relations plus subtiles et non linéaires présentes dans les données.
+
+## Khi-2
+
+Nous avons ensuite tenté de réaliser des tests du Khi-2 afin d’examiner les relations entre nos données catégoriques et les proportions de votes. Pour cela, nous avons décidé de segmenter les données en quatre catégories, représentées par 4 colonnes et 4 lignes, pour simplifier l’analyse et réduire la complexité des relations à tester.
+
+Malheureusement, cette approche s’est avérée encore moins concluante. Les résultats obtenus étaient chaotiques et incohérents, avec des p-valeurs élevées suggérant une absence de relation significative entre les variables étudiées. 
+
+L’un des principaux problèmes rencontrés résidait dans la distribution déséquilibrée des données au sein des catégories. Certaines cellules du tableau de contingence contenaient des effectifs trop faibles, voire nuls, ce qui a réduit considérablement la validité statistique du test du Khi-2. Cela a également généré des résultats peu fiables et difficilement généralisables.
+
+À la lumière de ces difficultés, nous avons conclu que le test du Khi-2 n’était pas adapté à nos données dans leur état actuel. 
+
+## Régression multiple
+
+IL ME MANQUE QUE CA, JE TOUCHE UN TRUC AU MODELE J4AI UNE IDEE
 
 ## Visualisation par la carte
 
