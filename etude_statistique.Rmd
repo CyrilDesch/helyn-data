@@ -231,7 +231,8 @@ head(analys_data, 3) %>%
   gt()
 ```
 
-Observons rapidement la répartition des richesses en fonction des votes:
+  
+Observons rapidement la répartition des richesses en fonction des votes :  
 
 ```{r echo = FALSE, warning = FALSE, message = FALSE }
 lims <- quantile(analys_data$niveau_vie_total, probs = c(0.01, 0.99), na.rm = TRUE)
@@ -287,7 +288,7 @@ ggplot(analys_data_clean, aes(x = score_orientation, y = niveau_vie_total)) +
   )
 ```
 
-Nous cherchons une diagonale allant de l'angle inférieur gauche vers l'angle supérieur droit. Ce n'est pas le cas ici, ce qui indique que l'influence de la richesse sur les votes n'est pas significative lorsqu'elle est observée isolément. En revanche, notre théorie est confirmée : plus le niveau de richesse est faible, plus les votes pour les extrêmes augmentent.
+Nous cherchons une diagonale allant de l'angle inférieur gauche vers l'angle supérieur droit. Ce n'est pas le cas ici, ce qui indique que l'influence de la richesse sur les votes n'est pas significative lorsqu'elle est observée isolément. En revanche, notre théorie semble se confirmer : plus le niveau de richesse est faible, plus les votes tendent vers les extrêmes.
 
 En conclusion, la richesse permet simplement d'expliquer qu'un niveau de vie bas est associé à une probabilité plus élevée de vote pour les extrêmes.
 
@@ -352,16 +353,13 @@ transform_custom_proportion <- function(df) {
 clean_data <- transform_custom_proportion(data)
 clean_data <- clean_data %>%
   select(-contains("population_ratio"), -contains("nb_25"), -contains("nb_25_64"), -contains("nb_65"), -contains("population_totale"), -contains("nb_h_total"), -contains("nb_f_total"), -contains("voix_eg"), -contains("voix_g"), -contains("voix_c"), -contains("voix_d"), -contains("voix_ed"), -contains("code_insee"), -contains("libelle"))
-
-# Afficher les premières lignes
-head(clean_data)
 ```
 
 ### Recherche globale
 
 #### Par visualisation
 
-Comme nous l'avons vu précédemment, il est intéressant de ploter notre score face à nos différentes données, nous allons donc tous les tester rapidement et essayer d'observer.
+Comme évoqué précédemment, il est pertinent de visualiser notre score en fonction de nos différentes variables explicatives. Nous allons donc les tester rapidement et observer les tendances qui en ressortent.
 
 ```{r echo = FALSE, warning = FALSE, message = FALSE}
 # Ajouter une colonne catégorielle pour regrouper par classe d'orientation politique
@@ -410,23 +408,21 @@ p <- ggplot(mean_values, aes(x = orientation_class, y = mean_value, fill = orien
 
 # Export en image pour une meilleure lecture
 ggsave("barplot_matrix.png", plot = p, width = 15, height = 8, dpi = 300)
-
-# Affichage du graphique
-p
-
 ```
 
 ![](barplot_matrix.png)  
 
-Cette matrice de graphiques en dispersions nous donne un bonne aperçu de quel variables seront intéressantes à étudier. 
+Cette matrice de graphiques de dispersion offre un bon aperçu des facteurs qui méritent d'être approfondies.
 
 ## Recherche de corrélations poussées
 
-### Random forest (via ranger)
+### Random forest
 
 #### Entrainement 
 
-```{r eval=FALSE}
+Le choix du modèle s'est orienté vers une random forest pour sa capacité à modéliser des interactions complexes entre les variables explicatives. L'implémentation ranger a été retenue en raison de ses performances optimisées, tant en termes de rapidité d'entraînement que de gestion de grandes quantités de données. L'objectif est de détecter des corrélations non linéaires qui pourraient influencer le vote de manière subtile et difficilement perceptible avec des modèles plus simples. Cette approche permet d'obtenir un bon équilibre entre le temps de calcul, la robustesse des prédictions et l'interprétabilité des résultats. Le script détaillé, incluant les paramètres d'entraînement et les étapes de prétraitement, est disponible en annexe pour une analyse complète et reproductible.
+
+```{r eval=FALSE, echo = FALSE, warning = FALSE, message = FALSE}
 # Préparation des données
 df_model <- clean_data %>%
   group_by(code_bureau_vote) %>%
@@ -434,8 +430,7 @@ df_model <- clean_data %>%
   ungroup() %>%
   select(where(is.numeric)) %>%
   select(-contains("voix")) %>%
-  filter(!is.na(score_orientation)) %>%
-  slice_sample(n = 100)
+  filter(!is.na(score_orientation))
 
 write.csv(df_model, file = "big_score_training_data.csv", row.names = FALSE)
 
@@ -453,8 +448,8 @@ train_ctrl <- trainControl(
   method        = "repeatedcv",
   number        = 5,
   repeats       = 3,
-  verboseIter   = TRUE,
-  allowParallel = FALSE
+  verboseIter   = FALSE,
+  allowParallel = TRUE
 )
 
 tune_grid <- expand.grid(
@@ -481,13 +476,18 @@ rf_model <- train(
 stopCluster(cl)
 saveRDS(rf_model, file = "big_score_model.rds")
 
+rf_model
 ```
+
+Notre modèle affiche un R-squared de 0.6196, un RMSE de 0.0514 et un MAE de 0.0385, sur 71 013 observations et 43 variables explicatives. Cela signifie que les facteurs socio-démographiques expliquent environ 61 % de la variabilité du vote, ce qui traduit une bonne capacité à identifier des corrélations pertinentes entre les variables et le comportement électoral.
+
+Cependant, cette performance doit être nuancée par la faible variance du score cible, ce qui limite l'amplitude des variations à expliquer. Les erreurs faibles (MAE et RMSE) indiquent une précision notable, mais environ 40 % de la variabilité reste inexpliquée, probablement en raison de facteurs non modélisés, comme des préférences individuelles ou des contextes locaux spécifiques.  
 
 ### Etude du modèle
 
-On commence par extraire les variables significatives de la random forest :    
+Nous commençons par identifier les variables significatives de notre modèle en utilisant le score d'importance basé sur l'impureté. Ce score correspond à la somme des réductions d'impureté réalisées par l'ensemble des arbres lorsqu'une variable est utilisée pour diviser un nœud. Bien que cette notion d'impureté puisse nous être peu familière, elle reste un indicateur fiable pour évaluer l'importance des variables. Nous obtenons ainsi :
 
-```{r eval=FALSE}
+```{r echo = FALSE, warning = FALSE, message = FALSE}
 # Charger le modèle depuis le fichier RDS
 rf_model <- readRDS("big_score_model.rds")
 
@@ -499,27 +499,32 @@ importance_df$variable <- rownames(importance_df)
 # Trier par importance décroissante
 importance_df <- importance_df[order(-importance_df$Overall), ]
 
-# Choisir un seuil d'importance (exemple : garder les variables dont l'importance est supérieure à 5% du max)
-seuil <- 0.05 * max(importance_df$Overall)
+# Choisir un seuil d'importance (exemple : garder les variables dont l'importance est supérieure à 50% du max)
+seuil <- 0.50 * max(importance_df$Overall)
 selected_vars <- importance_df[importance_df$Overall >= seuil, ]
 selected_vars
 ```
 
-Puis on peut essayer d'analyser des profils types et les variables qui influent :  
+On peut en conclure que des facteurs tels que la proportion de logements collectifs, de maisons et leur taille influencent l'orientation des votes au sein d'un bureau de vote. On observe également l'influence de facteurs liés à l'emploi, comme la proportion d'ouvriers et d'employés. Ces éléments seront décrits plus en détail lors de la synthèse.  
 
-```{r eval=FALSE}
+Enfin, nous pouvons analyser des profils types et identifier les variables qui influencent ces profils. Pour cela, nous effectuons des prédictions à partir de notre modèle tout en catégorisant les observations afin d'examiner, pour chaque catégorie, les principales variables influentes. Nous utilisons la méthode de Shapley et les valeurs SHAP pour déterminer ces contributions. Voici les diagrammes correspondants :
+
+```{r eval=FALSE, echo = FALSE, warning = FALSE, message = FALSE}
 # Charger le dataset depuis le fichier CSV
 model_data <- read.csv("big_score_training_data.csv")
 
 # Sélection des colonnes utilisées dans le modèle
 model_vars <- setdiff(colnames(model_data), "score_orientation")
 
+# Création de l'objet Predictor pour l'explication des prédictions
+predictor <- Predictor$new(model = rf_model, data = model_data[model_vars], y = model_data$score_orientation)
+
 # Fonction pour extraire plusieurs observations par tranche de `score_orientation`
 extract_observations_group <- function(data, lower_bound, upper_bound, model_vars, n = 20) {
   data %>%
     filter(score_orientation >= lower_bound, score_orientation < upper_bound) %>%
-    select(all_of(c(model_vars, "score_orientation"))) %>%
-    slice_sample(n = n)  # Prendre des observations aléatoires
+    select(all_of(model_vars)) %>%  # Ne garder que les colonnes du modèle (sans score_orientation)
+    slice_sample(n = n)
 }
 
 # Création des 5 groupes d'observations
@@ -529,92 +534,158 @@ X_group3 <- extract_observations_group(model_data, 0.4, 0.6, model_vars, n = 20)
 X_group4 <- extract_observations_group(model_data, 0.6, 0.8, model_vars, n = 20)
 X_group5 <- extract_observations_group(model_data, 0.8, 1.0, model_vars, n = 20)
 
-# Fonction pour calculer la moyenne des valeurs SHAP pour un groupe d'observations
+# Fonction pour calculer la moyenne des valeurs SHAP signées pour un groupe d'observations
 compute_shapley_mean <- function(predictor, x_interest_group) {
+  base_values <- c()  # Pour stocker les valeurs de base
+  
   shapley_results <- lapply(1:nrow(x_interest_group), function(i) {
     x_interest <- x_interest_group[i, , drop = FALSE]
     shapley <- Shapley$new(predictor, x.interest = x_interest)
+    
+    # Stocker la base value pour l'observation
+    base_values <<- c(base_values, shapley$y.hat.average)
+    
     shapley$results %>% mutate(observation_id = i)
   })
   
   shapley_combined <- do.call(rbind, shapley_results)
+  
+  # Calculer la moyenne signée pour voir si l'influence est positive ou négative
   shapley_mean <- shapley_combined %>%
     group_by(feature) %>%
-    summarise(mean_phi = mean(abs(phi)), .groups = 'drop')
+    summarise(
+      mean_phi = mean(phi),  # Garder la moyenne signée des valeurs SHAP
+      abs_mean_phi = mean(abs(phi)),  # Moyenne des valeurs absolues pour référence
+      .groups = 'drop'
+    )
   
-  return(shapley_mean)
+  # Retourner la moyenne des base values en plus des valeurs SHAP moyennes
+  return(list(
+    shapley_mean = shapley_mean,
+    base_value = mean(base_values)  # Moyenne des valeurs de base pour le groupe
+  ))
 }
 
-# Calcul des valeurs SHAP moyennes pour chaque groupe
-shapley_mean1 <- compute_shapley_mean(predictor, X_group1)
-shapley_mean2 <- compute_shapley_mean(predictor, X_group2)
-shapley_mean3 <- compute_shapley_mean(predictor, X_group3)
-shapley_mean4 <- compute_shapley_mean(predictor, X_group4)
-shapley_mean5 <- compute_shapley_mean(predictor, X_group5)
+# Calcul des valeurs SHAP moyennes pour chaque groupe et extraction des éléments
+result_shapley_mean1 <- compute_shapley_mean(predictor, X_group1)
+shapley_mean1 <- result_shapley_mean1$shapley_mean
+base_value1 <- result_shapley_mean1$base_value
 
-# Visualisation des profils types par tranche
-plot_shapley_profile <- function(shapley_mean, title) {
-  ggplot(shapley_mean, aes(x = reorder(feature, -mean_phi), y = mean_phi)) +
-    geom_bar(stat = "identity", fill = "steelblue") +
+result_shapley_mean2 <- compute_shapley_mean(predictor, X_group2)
+shapley_mean2 <- result_shapley_mean2$shapley_mean
+base_value2 <- result_shapley_mean2$base_value
+
+result_shapley_mean3 <- compute_shapley_mean(predictor, X_group3)
+shapley_mean3 <- result_shapley_mean3$shapley_mean
+base_value3 <- result_shapley_mean3$base_value
+
+result_shapley_mean4 <- compute_shapley_mean(predictor, X_group4)
+shapley_mean4 <- result_shapley_mean4$shapley_mean
+base_value4 <- result_shapley_mean4$base_value
+
+result_shapley_mean5 <- compute_shapley_mean(predictor, X_group5)
+shapley_mean5 <- result_shapley_mean5$shapley_mean
+base_value5 <- result_shapley_mean5$base_value
+
+
+plot_shapley_profile_signed <- function(shapley_mean, title, base_value) {
+  # Vérifier qu'il y a au moins 5 variables positives et 5 négatives
+  top_positive <- shapley_mean %>%
+    filter(mean_phi > 0) %>%
+    arrange(desc(mean_phi)) %>%
+    slice_head(n = 5)  # Prendre au maximum 5 variables positives
+
+  top_negative <- shapley_mean %>%
+    filter(mean_phi < 0) %>%
+    arrange(mean_phi) %>%
+    slice_head(n = 5)  # Prendre au maximum 5 variables négatives
+
+  # Combiner les deux sets de données
+  shapley_balanced <- bind_rows(top_positive, top_negative)
+
+  # S'assurer qu'il y ait bien 5 de chaque côté en remplissant avec des NA si besoin
+  if (nrow(top_positive) < 5) {
+    missing_pos <- tibble(
+      feature = paste0("Pos_manquante_", 1:(5 - nrow(top_positive))),
+      mean_phi = rep(0, 5 - nrow(top_positive))
+    )
+    shapley_balanced <- bind_rows(shapley_balanced, missing_pos)
+  }
+
+  if (nrow(top_negative) < 5) {
+    missing_neg <- tibble(
+      feature = paste0("Aucune", 1:(5 - nrow(top_negative))),
+      mean_phi = rep(0, 5 - nrow(top_negative))
+    )
+    shapley_balanced <- bind_rows(shapley_balanced, missing_neg)
+  }
+
+  # Création du diagramme avec la valeur de base
+  ggplot(shapley_balanced, aes(x = reorder(feature, mean_phi), y = mean_phi, fill = mean_phi > 0)) +
+    geom_bar(stat = "identity") +
     coord_flip() +
-    labs(title = title, x = "Feature", y = "Valeur SHAP moyenne (abs)") +
-    theme_minimal()
+    labs(
+      title = paste0(title),
+      x = "Facteurs",
+      y = "Valeur SHAP\nÀ partir de centre-droite, oriente vers la gauche ou vers la droite",
+      fill = "Direction"
+    ) +
+    theme_minimal() +
+    theme(
+      axis.text.y = element_text(size = 10),
+      plot.title = element_text(hjust = 0.5, face = "bold")
+    ) +
+    scale_fill_manual(
+      values = c("red", "green"),
+      labels = c("Gauche", "Droite")
+    ) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "black")
+}
+
+export_plot <- function(plot, filename) {
+  # Exportation en PNG avec une résolution élevée
+  ggsave(
+    filename = paste0(filename, ".png"),
+    plot = plot,
+    width = 8,   # Largeur du graphique en pouces
+    height = 6,  # Hauteur du graphique en pouces
+    dpi = 300    # Résolution pour une qualité d'impression
+  )
 }
 
 # Plots des profils types pour chaque tranche
-plot_shapley_profile(shapley_mean1, "Profil type pour la tranche [0.0 - 0.2[")
-plot_shapley_profile(shapley_mean2, "Profil type pour la tranche [0.2 - 0.4[")
-plot_shapley_profile(shapley_mean3, "Profil type pour la tranche [0.4 - 0.6[")
-plot_shapley_profile(shapley_mean4, "Profil type pour la tranche [0.6 - 0.8[")
-plot_shapley_profile(shapley_mean5, "Profil type pour la tranche [0.8 - 1.0]")
+# Exporter directement les plots des profils types
+p1 <- plot_shapley_profile_signed(shapley_mean1, "Profil type extrême gauche", base_value1)
+export_plot(p1, "profil_type_extreme_gauche")
 
-# Fonction pour calculer la moyenne des valeurs SHAP par groupe de variables
-compute_shapley_influence <- function(shapley_means) {
-  shapley_means %>%
-    mutate(Group = case_when(
-      grepl("prop|population", feature) ~ "Démographie",
-      grepl("emplois|ouvriers|employes", feature) ~ "Emploi",
-      grepl("menages|logements", feature) ~ "Habitation",
-      TRUE ~ "Autre"
-    )) %>%
-    group_by(Group) %>%
-    summarise(
-      mean_phi = mean(mean_phi),
-      sd_phi = sd(mean_phi),
-      .groups = 'drop'
-    ) %>%
-    arrange(desc(mean_phi))
-}
+p2 <- plot_shapley_profile_signed(shapley_mean2, "Profil type gauche", base_value2)
+export_plot(p2, "profil_type_gauche")
 
-# Calculer les moyennes SHAP pour chaque groupe d'observations
-shapley_mean1_grouped <- compute_shapley_influence(shapley_mean1)
-shapley_mean2_grouped <- compute_shapley_influence(shapley_mean2)
-shapley_mean3_grouped <- compute_shapley_influence(shapley_mean3)
-shapley_mean4_grouped <- compute_shapley_influence(shapley_mean4)
-shapley_mean5_grouped <- compute_shapley_influence(shapley_mean5)
+p3 <- plot_shapley_profile_signed(shapley_mean3, "Profil type centre", base_value3)
+export_plot(p3, "profil_type_centre")
 
-# Visualisation de la dispersion des valeurs SHAP par groupe
-plot_group_distribution <- function(shapley_means, title) {
-  ggplot(shapley_means, aes(x = Group, y = mean_phi, fill = Group)) +
-    geom_boxplot(outlier.color = "red", outlier.shape = 1) +
-    geom_jitter(width = 0.2, alpha = 0.5) +
-    labs(
-      title = title,
-      x = "Groupes de variables",
-      y = "Valeur SHAP (importance absolue)"
-    ) +
-    theme_minimal() +
-    theme(plot.title = element_text(hjust = 0.5))
-}
+p4 <- plot_shapley_profile_signed(shapley_mean4, "Profil type droite", base_value4)
+export_plot(p4, "profil_type_droite")
 
-# Plots pour chaque tranche de score
-plot_group_distribution(shapley_mean1_grouped, "Distribution des valeurs SHAP [0.0 - 0.2[")
-plot_group_distribution(shapley_mean2_grouped, "Distribution des valeurs SHAP [0.2 - 0.4[")
-plot_group_distribution(shapley_mean3_grouped, "Distribution des valeurs SHAP [0.4 - 0.6[")
-plot_group_distribution(shapley_mean4_grouped, "Distribution des valeurs SHAP [0.6 - 0.8[")
-plot_group_distribution(shapley_mean5_grouped, "Distribution des valeurs SHAP [0.8 - 1.0]")
+p5 <- plot_shapley_profile_signed(shapley_mean5, "Profil type extrême droite", base_value5)
+export_plot(p5, "profil_type_extreme_droite")
 ```
 
+![](profil_type_extreme_gauche.png)
+
+------------------------------------------------------------------------
+
+![](profil_type_gauche.png)
+
+------------------------------------------------------------------------
+
+![](profil_type_centre.png)
+------------------------------------------------------------------------
+
+![](profil_type_droite.png)
+------------------------------------------------------------------------
+
+![](profil_type_extreme_droite.png)
 
 ------------------------------------------------------------------------
 
