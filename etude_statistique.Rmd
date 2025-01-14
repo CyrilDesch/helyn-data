@@ -205,9 +205,19 @@ colnames(corr_table) <- c("VarVote", "VarDemo", "Correlation")
 corr_table_sorted <- corr_table[order(abs(corr_table$Correlation), decreasing = TRUE), ]
 
 # On affiche les 10 plus fortes corrélations
-head(corr_table_sorted, 40)
+head(corr_table_sorted, 10)
+
+# Tri par variable démographique (group_by) 
+corr_table_sorted_by_demo <- corr_table %>%
+  group_by(VarDemo) %>%
+  arrange(desc(abs(Correlation)), .by_group = TRUE)
+
+# Affiche toutes les corrélations, triées à l'intérieur de chaque VarDemo
+corr_table_sorted_by_demo
 ```
-À ce stade, nous nous sommes interrogés sur la possibilité de modéliser nos données en utilisant un simple modèle de régression linéaire. L’objectif était de déterminer si une telle approche pouvait capter les tendances observées et expliquer les variations des proportions de voix en fonction des différentes variables socio-démographiques. 
+Nous avons aussi étudié les 
+
+À ce stade, nous nous sommes interrogés sur la possibilité de modéliser nos données en utilisant un simple modèle de régression linéaire. L’objectif était de déterminer si une telle approche pouvait capter les tendances observées et expliquer les variations des proportions de voix en fonction des différentes variables socio-démographiques.  
 
 ## Regression liénaire
 
