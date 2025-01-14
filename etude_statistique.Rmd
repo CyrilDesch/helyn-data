@@ -39,12 +39,9 @@ library(caret)
 library(ranger)
 library(doParallel)
 library(nnet)
-<<<<<<< HEAD
 library(iml)
 library(tibble)
-=======
 
->>>>>>> aed9d0b (Feat : rapport regression)
 ```
 
 ------------------------------------------------------------------------
