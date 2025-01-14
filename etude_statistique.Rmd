@@ -165,6 +165,20 @@ head(data, 3) %>%
 
 ------------------------------------------------------------------------
 
+## Visualisation par la carte
+
+Après avoir fusionné toutes les données issues des élections présidentielles de 2012, 2017 et 2022, nous avons construit des cartes géographiques illustrant l'évolution de l'intention de vote des Français au fil du temps. Ces cartes mettent en évidence les changements significatifs dans les orientations politiques de l'électorat, avec une représentation des zones dominées par les votes à droite (teintes bleues) et à gauche (teintes rouges).
+
+En analysant les cartes de 2012, 2017 et 2022, nous pouvons observer un basculement marqué vers la droite dans de nombreuses régions, particulièrement dans le Nord-Est de la France. Toutefois, certaines régions, comme la Bretagne, conservent une stabilité de vote à gauche.
+
+Cette transition dans les résultats électoraux nous invite à explorer plus en détail les facteurs sous-jacents à ces changements, notamment en cherchant des corrélations entre différentes variables socio-économiques et les tendances politiques observées.
+
+::: {style="display: flex; justify-content: space-between;"}
+```{r echo=FALSE, out.width="32%", fig.show='hold'}
+knitr::include_graphics(c("France-2012.png", "France-2017.png", "France-2022.png"))
+```
+:::
+
 ## Data Mining Descriptif
 
 L'analyse des données doit être la plus précise possible. Pour cela, nous avons choisi de créer un jeu de données intermédiaire qui élimine la duplication des bureaux de vote sur plusieurs années. Nous sélectionnerons aléatoirement une seule observation par bureau de vote parmi différentes années afin d’éviter un biais de similitude. En effet, un bureau ayant historiquement voté à droite a de fortes chances de continuer à voter de la même manière, ce qui pourrait fausser l’analyse si nous incluons plusieurs observations temporelles sans ajustement.
@@ -606,16 +620,3 @@ plot_group_distribution(shapley_mean5_grouped, "Distribution des valeurs SHAP [0
 
 ## Synthèse
 
-Nous voyons instantanément qu'il y a eu de gros changements dans l'intention de vote des Français entre 2012 et 2022. Sur ces cartes, l'intensité des couleurs représente la force des tendances politiques : plus la teinte est bleue, plus l'électorat vote à droite ; plus elle est rouge, plus l'électorat vote à gauche.
-
-En 2012, très peu de communes montrent un vote majoritaire à droite. Le bleu est peu présent sur la carte, avec une concentration visible principalement dans certaines zones du Nord-Est de la France.
-
-En 2017 et en 2022, le bleu est beaucoup plus représenté, notamment dans le Nord-Est où il domine largement et atteint souvent des teintes de bleu foncé. Cette évolution marque un basculement progressif d'une partie importante de l'électorat vers la droite, avec des contrastes régionaux de plus en plus marqués.
-
-Cependant, certaines régions ont conservé une certaine stabilité dans leurs choix politiques. La Bretagne, par exemple, reste l’une des régions où le vote à gauche est resté dominant et où les évolutions dans les tendances politiques sont beaucoup moins marquées.
-
-::: {style="display: flex; justify-content: space-between;"}
-```{r echo=FALSE, out.width="32%", fig.show='hold', fig.cap=c("*Élection présidentielle 2012*", "*Élection présidentielle 2017*", "*Élection présidentielle 2022*")}
-knitr::include_graphics(c("France-2012.png", "France-2017.png", "France-2022.png"))
-```
-:::
