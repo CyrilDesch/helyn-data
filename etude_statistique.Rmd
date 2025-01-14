@@ -12,6 +12,14 @@ output:
   pdf_document: default  # Si un PDF est souhaité
 ---
 
+<style>
+body {text-align: justify}
+</style>
+
+<style>
+body {text-align: justify}
+</style>
+
 ------------------------------------------------------------------------
 
 > **TODO** :\
@@ -89,13 +97,27 @@ De plus, nous nous concentrerons uniquement sur les bureaux de vote situés en F
 
 -   **Facteurs mode de vie** : certaines variables, comme la propriété immobilière ou la structure des ménages (par exemple, vivre seul ou en famille), peuvent refléter des comportements électoraux stratégiques, en lien avec des choix rationnels visant à préserver ou à optimiser une situation personnelle.
 
-Certaines de ces données ont été directement récupérées sur le site de l'INSEE, via des études ou des cartes interactives avec export de données (par exemple, statistiques-locales.insee.fr). Ces données étant regroupées par commune, nous avons pu les répartir proportionnellement entre les bureaux de vote en fonction du nombre de votants.
+Certaines de ces données ont été directement récupérées sur le site de l'INSEE, via des études ou des cartes interactives avec export de données (par exemple, statistiques-locales.insee.fr). Nous avons rencontré des difficultés pour obtenir des données complètes et précises, par exemple pour l'âge moyen des habitants. En effet, la donnée était séparée en tranches d'âge, ce qui ne correspondait pas exactement à notre besoin. De plus, ces tranches d'age étaient réduites à moins de 25 ans, 25-64 ans et plus de 65 ans. Nous avons donc dû nous contenter de ces données, en espérant qu'elles soient suffisantes pour notre étude.
+
+Nous avons aussi rencontré des problèmes pour obtenir des données sur le niveau d'études, qui n'étaient pas disponibles pour toutes les années. Pour ces paramètres, nous avons choisi des laisser ces valeurs manquantes plutôt que de les calculer avec des valeurs approximatives. Cela nous permet de conserver une certaine rigueur dans notre analyse, nous laissant toujours la possibilité de revenir sur ce choix et d'imputer les données si besoin.
+
+Les données socio-démographiques concernant les communes d'outre-mer n'ont pas été incluses dans notre étude, car il manquait trop de données pour être comparables avec celles de la France métropolitaine. Cela aurait introduit un biais dans notre analyse, en mélangeant des données provenant de contextes socio-économiques différents.
+
+La grande majorité de ces données étant regroupées par commune, nous avons décidé de les répartir proportionnellement entre les bureaux de vote en fonction du nombre de votants.
+
+Nous aurions aussi aimmé utiliser d'autres données, ou des jeux plus précis pour notre analyse, mais ces données étaient rapportés aux départements ou région et non par commune. Cela aurait nécessité un travail de fusion et de répartition des données plus complexe, que nous n'avons pas jugé utile pour notre étude.
 
 En revanche, la collecte des données concernant les revenus, le lieu de vie et les conditions de vie a été plus complexe. Ces données sont fournies sous forme de « carreaux » géographiques de 200 mètres de côté. Il a donc été nécessaire de récupérer les contours géographiques des bureaux de vote, de convertir et harmoniser les formats de coordonnées (CRS), puis de fusionner ces ensembles de données. La librairie R sf a été utilisée pour effectuer ces opérations, notamment en croisant les carreaux de 200 mètres avec les contours des bureaux de vote. Cette tâche s'est avérée chronophage en raison du coût computationnel élevé des calculs nécessaires pour chaque opération. Certaines données ont dû être additionnées, d'autres moyennées. Une vérification finale a montré une perte de seulement 0,01 % des données, ce qui constitue un excellent résultat pour ce type de fusion géographique.
+
+
 
 ------------------------------------------------------------------------
 
 ## Nettoyage et fusion des données
+
+Concernant le nettoyage des données, plusieurs étapes ont été nécessaires pour garantir la qualité et la cohérence des informations. Les données électorales et socio-démographiques ont été collectées auprès de différentes sources, nécessitant une harmonisation des formats et des variables.
+Nous avons d'abord sélectionné les colonnes pertinentes pour notre étude, en éliminant les doublons et les variables inutiles. Un travail de normalisation a été effectué pour uniformiser les noms des colonnes et faciliter les opérations de fusion et de jointure.
+Les données ont été vérifiées afin d’éviter les valeurs aberrantes et garantir leur cohérence. Certaines transformations ont également été effectuées pour faciliter la visualisation et les rendre compatibles avec notre modèle d'analyse.
 
 Le point de centralisation des données finales est le **code bureau de vote**, un identifiant unique attribué à chaque bureau de vote.
 
@@ -292,12 +314,12 @@ Cette matrice de graphiques en dispersions nous donne un bonne aperçu de quel v
 ```{r eval=FALSE}
 # Préparation des données
 df_model <- data %>%
-  group_by(code_bureau_vote) %>%
-  slice_sample(n = 1) %>%
-  ungroup() %>%
-  select(where(is.numeric)) %>%
-  select(-contains("voix"), -contains("non_exp")) %>%
-  filter(!is.na(score_orientation))
+ group_by(code_bureau_vote) %>%
+ slice_sample(n = 1) %>%
+ ungroup() %>%
+ select(where(is.numeric)) %>%
+ select(-contains("voix"), -contains("non_exp")) %>%
+ filter(!is.na(score_orientation))
 
 nzv <- nearZeroVar(df_model, saveMetrics = TRUE)
 df_model <- df_model[, !nzv$nzv]
@@ -310,17 +332,17 @@ cl <- makeCluster(num_cores)
 registerDoParallel(cl)
 
 train_ctrl <- trainControl(
-  method        = "repeatedcv",
-  number        = 5,
-  repeats       = 3,
-  verboseIter   = FALSE,
-  allowParallel = TRUE
+ method        = "repeatedcv",
+ number        = 5,
+ repeats       = 3,
+ verboseIter   = FALSE,
+ allowParallel = TRUE
 )
 
 tune_grid <- expand.grid(
-  mtry          = c(2, 4, 6, 8),
-  splitrule     = c("variance", "extratrees"),
-  min.node.size = c(5, 10, 15)
+ mtry          = c(2, 4, 6, 8),
+ splitrule     = c("variance", "extratrees"),
+ min.node.size = c(5, 10, 15)
 )
 
 df_model <- as.data.frame(df_model)
@@ -329,13 +351,13 @@ Y <- df_model$score_orientation
 
 set.seed(123)
 rf_model <- train(
-  x          = X,
-  y          = Y,
-  method     = "ranger",
-  trControl  = train_ctrl,
-  tuneGrid   = tune_grid,
-  num.trees  = 500,
-  importance = "impurity"
+ x          = X,
+ y          = Y,
+ method     = "ranger",
+ trControl  = train_ctrl,
+ tuneGrid   = tune_grid,
+ num.trees  = 500,
+ importance = "impurity"
 )
 
 print(rf_model)
@@ -344,7 +366,6 @@ varImp(rf_model)
 
 stopCluster(cl)
 saveRDS(rf_model, file = "big_score_rf_model.rds")
-
 ```
 
 ------------------------------------------------------------------------
