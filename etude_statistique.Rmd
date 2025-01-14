@@ -54,7 +54,7 @@ Prédire les résultats d'éléctions présidentielles française d'un bureau de
 
 ### Cadre théorique
 
-Les préférences politiques des individus peuvent être façonnées par des variables socio-démographiques telles que l’âge, le niveau d’éducation, la situation économique ou encore le lieu de résidence. Nous voulions essayer d'observer des tendances que créent ces cadres théoriques. Plusieurs cadres théoriques permettent de formuler des hypothèses sur ces influences potentielles.
+Les préférences politiques des individus peuvent être façonnées par des variables socio-démographiques telles que l’âge, le niveau d’éducation, la situation économique ou encore le lieu de résidence. Nous voulions essayer d'observer des tendances que créent ces cadres théoriques. Plusieurs cadres théoriques permettent de formuler des hypothèses sur ces influences potentielles : 
 
 La **théorie de la socialisation politique** suppose que des facteurs comme l’âge, le genre et la composition familiale jouent un rôle dans la formation des opinions politiques. Par exemple, on pourrait s’attendre à ce que les jeunes adultes soient plus attirés par des idées progressistes, tandis que les générations plus âgées privilégient des positions conservatrices, influencées par leurs expériences passées.
 
@@ -86,6 +86,8 @@ D’après le cadre théorique, la première étape consiste à collecter les r�
 
 De plus, nous nous concentrerons uniquement sur les bureaux de vote situés en France métropolitaine afin de simplifier la visualisation des données sur une carte. Cette restriction n’a qu’un faible impact sur la représentativité globale du jeu de données.
 
+Enfin, nous n'utiliserons que les données des premiers tours. Elles sont plus représentatives du choix de chacun, car non-influencé par l'obligation de voter pour le "moins pire".
+
 ### Données socio-démographiques
 
 À partir du cadre théorique, nous avons identifié plusieurs groupes de facteurs socio-démographiques susceptibles d'influencer les orientations politiques des individus :
@@ -110,9 +112,9 @@ Les données socio-démographiques concernant les communes d'outre-mer n'ont pas
 
 La grande majorité de ces données étant regroupées par commune, nous avons décidé de les répartir proportionnellement entre les bureaux de vote en fonction du nombre de votants.
 
-Nous aurions aussi aimmé utiliser d'autres données, ou des jeux plus précis pour notre analyse, mais ces données étaient rapportés aux départements ou région et non par commune. Cela aurait nécessité un travail de fusion et de répartition des données plus complexe, que nous n'avons pas jugé utile pour notre étude.
+Nous avons aussi voulu utiliser d'autres données, ou des jeux plus précis pour notre analyse, mais ces données étaient rapportés aux départements ou région et non par commune. Cela aurait nécessité un travail de fusion et de répartition des données plus complexe, que nous n'avons pas jugé utile pour notre étude.
 
-En revanche, la collecte des données concernant les revenus, le lieu de vie et les conditions de vie a été plus complexe. Ces données sont fournies sous forme de « carreaux » géographiques de 200 mètres de côté. Il a donc été nécessaire de récupérer les contours géographiques des bureaux de vote, de convertir et harmoniser les formats de coordonnées (CRS), puis de fusionner ces ensembles de données. La librairie R sf a été utilisée pour effectuer ces opérations, notamment en croisant les carreaux de 200 mètres avec les contours des bureaux de vote. Cette tâche s'est avérée chronophage en raison du coût computationnel élevé des calculs nécessaires pour chaque opération. Certaines données ont dû être additionnées, d'autres moyennées. Une vérification finale a montré une perte de seulement 0,01 % des données, ce qui constitue un excellent résultat pour ce type de fusion géographique.
+En revanche, la collecte des données concernant les revenus, le lieu de vie et les conditions de vie a été plus complexe. Ces données sont fournies sous forme de « carreaux » géographiques de 200 mètres de côté. Il a donc été nécessaire de récupérer les contours géographiques des bureaux de vote, de convertir et harmoniser les formats de coordonnées (CRS), puis de fusionner ces ensembles de données. La librairie R sf a été utilisée pour effectuer ces opérations, notamment en croisant les carreaux de 200 mètres avec les contours des bureaux de vote. Cette tâche s'est avérée chronophage en raison du coût élevé des calculs nécessaires pour chaque opération. Certaines données ont dû être additionnées, d'autres moyennées. Une vérification finale a montré une perte de seulement 0,01 % des données, ce qui constitue un excellent résultat pour ce type de fusion géographique.
 
 
 
@@ -317,11 +319,15 @@ En analysant les cartes de 2012, 2017 et 2022, nous pouvons observer un basculem
 
 Cette transition dans les résultats électoraux nous invite à explorer plus en détail les facteurs sous-jacents à ces changements, notamment en cherchant des corrélations entre différentes variables socio-économiques et les tendances politiques observées.
 
+Ces dernières sont disponibles directement sur https://helyn.cyrildeschamps.fr, elles sont interactives et des données sont accessibles en cliquant sur la commune de votre choix.
+
 ::: {style="display: flex; justify-content: space-between;"}
 ```{r echo=FALSE, out.width="32%", fig.show='hold'}
 knitr::include_graphics(c("France-2012.png", "France-2017.png", "France-2022.png"))
 ```
 :::
+
+------------------------------------------------------------------------
 
 ## Data Mining Descriptif
 
@@ -556,7 +562,9 @@ ggsave("barplot_matrix.png", plot = p, width = 15, height = 8, dpi = 300)
 
 ![](barplot_matrix.png)  
 
-Cette matrice de graphiques de dispersion offre un bon aperçu des facteurs qui méritent d'être approfondies.
+Cette matrice de graphiques de dispersion offre un bon aperçu des facteurs qui méritent d'être approfondies. On repère rapidement que le nombre de ménage propriétaire pousse un vote vers la droite. On voit aussi qu'un plus haut niveau d'étude pousse à voter à gauche.
+
+------------------------------------------------------------------------  
 
 ## Recherche de corrélations poussées
 
@@ -815,24 +823,44 @@ p5 <- plot_shapley_profile_signed(shapley_mean5, "Profil type extrême droite", 
 export_plot(p5, "profil_type_extreme_droite")
 ```
 
-![](profil_type_extreme_gauche.png)
+```{r echo=FALSE, out.width = "500px"}
+knitr::include_graphics("profil_type_extreme_gauche.png")
+```
 > **INTERPRETER**  
 >  
 
-![](profil_type_gauche.png)
+```{r echo=FALSE, out.width = "500px"}
+knitr::include_graphics("profil_type_extreme_gauche.png")
+```
 
 > **INTERPRETER**  
 >  
 
-![](profil_type_centre.png)
+```{r echo=FALSE, out.width = "500px"}
+knitr::include_graphics("profil_type_gauche.png")
+```
+
 > **INTERPRETER**  
 >  
 
-![](profil_type_droite.png)
+```{r echo=FALSE, out.width = "500px"}
+knitr::include_graphics("profil_type_centre.png")
+```
+
 > **INTERPRETER**  
 >  
 
-![](profil_type_extreme_droite.png)
+```{r echo=FALSE, out.width = "500px"}
+knitr::include_graphics("profil_type_droite.png")
+```
+
+> **INTERPRETER**  
+>  
+
+```{r echo=FALSE, out.width = "500px"}
+knitr::include_graphics("profil_type_extreme_droite.png")
+```
+
 > **INTERPRETER**  
 >  
 
