@@ -831,22 +831,27 @@ export_plot(p5, "profil_type_extreme_droite")
 ```{r echo=FALSE, out.width = "500px"}
 knitr::include_graphics("profil_type_extreme_gauche.png")
 ```
-> **INTERPRETER**  
->  
+Le diagramme des profils types met en évidence que les individus ayant une tendance à voter pour l’extrême gauche sont généralement de jeunes personnes de moins de 25 ans, appartenant aux catégories socioprofessionnelles des employés ou des ouvriers. Fait intéressant, ce profil type inclut également des résidents de maisons individuelles avec un niveau de vie modéré à élevé. 
+
+À l’inverse, les personnes les moins enclines à voter pour l’extrême gauche se distinguent par des caractéristiques telles qu’un niveau d’éducation élevé (bac+3, bac+4, bac+5 et plus) ou, à l’opposé, un faible niveau de qualification. Ce profil inclut également des résidents de logements collectifs ou sociaux, reflétant des conditions de vie plus modestes ou une dynamique sociale différente.
+
+
 
 ```{r echo=FALSE, out.width = "500px"}
 knitr::include_graphics("profil_type_gauche.png")
 ```
 
-> **INTERPRETER**  
->  
+Tout d'abord, nous n’avons pas identifié d’éléments spécifiques qui les inciteraient à ne pas voter pour ce courant politique. Cependant, des similarités avec les facteurs liés à l’extrême gauche sont apparentes, notamment le fait d’être un jeune employé de moins de 25 ans.
+
+Ensuite, d’autres facteurs spécifiques favorisent un vote à gauche. Parmi ceux-ci, un niveau d’éducation correspondant à un CAP ou un BEP se démarque. On observe également une corrélation positive avec la surface totale des logements proportionnelement au nombre de ménages, ce qui peut être interprété comme un indicateur de résidence dans des petites communes ou des zones plus rurales, où les logements tendent à être plus spacieux. Enfin, vivre dans une maison apparaît également comme un facteur influençant positivement le choix de voter à gauche, reflétant un certain mode de vie propre à ces zones géographiques.
+
+
 
 ```{r echo=FALSE, out.width = "500px"}
 knitr::include_graphics("profil_type_centre.png")
 ```
 
-> **INTERPRETER**  
->  
+
 
 ```{r echo=FALSE, out.width = "500px"}
 knitr::include_graphics("profil_type_droite.png")
