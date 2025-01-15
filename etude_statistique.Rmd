@@ -1,15 +1,24 @@
 ---
-title: "Helyn - Étude statistiques"
-subtitle: "Prédire les résultats des élections présidentielles françaises d'un bureau de vote"
-author: "D'après Cyril Deschamps, Etienne Ducros, Hugo Brun et Lennon Herrmann / [Site du projet](https://helyn.cyrildeschamps.fr)"
+title: "Helyn - Étude statistique"
+author: |
+  D'après Cyril Deschamps, Etienne Ducros, Hugo Brun et Lennon Herrmann  
+  [Application du projet : https://helyn.cyrildeschamps.fr](https://helyn.cyrildeschamps.fr)
 date: "`r Sys.Date()`"
 output:
+  pdf_document:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+    fig_caption: true
   html_document:
     toc: true
     toc_depth: 3
     number_sections: true
     fig_caption: true
-
+header-includes:
+  - \usepackage{booktabs}
+  - \usepackage{needspace}
+subtitle: "Prédire les résultats des élections présidentielles françaises d'un bureau de vote."
 ---
 
 <style>
@@ -33,17 +42,18 @@ library(nnet)
 library(iml)
 library(tibble)
 library(patchwork)
+library(knitr)
 ```
 
 ------------------------------------------------------------------------
 
-## Introduction
+# Introduction
 
-### Problématique
+## Problématique
 
-Prédire les résultats d'éléctions présidentielles française d'un bureau de vote, dans l'idéal. Mais en réalité le but était surtout de trouver des correlations et dépendances entre les résultats d'éléctions présidentielles française d'un bureau de vote, et des données démographiques.
+Prédire les résultats d'éléctions présidentielles française d'un bureau de vote, dans l'idéal. Mais en réalité le but était surtout de trouver des corrélations et dépendances entre les résultats d'éléctions présidentielles française d'un bureau de vote, et des données démographiques.
 
-### Cadre théorique
+## Cadre théorique
 
 Les préférences politiques des individus peuvent être façonnées par des variables socio-démographiques telles que l’âge, le niveau d’éducation, la situation économique ou encore le lieu de résidence. Nous voulions essayer d'observer des tendances que créent ces cadres théoriques. Plusieurs cadres théoriques permettent de formuler des hypothèses sur ces influences potentielles : 
 
@@ -59,23 +69,23 @@ La **théorie de la privation relative** suggère que les inégalités perçues 
 
 Enfin, la **théorie du choix rationnel** propose que les électeurs adoptent des comportements stratégiques, en cherchant à maximiser leurs bénéfices individuels à travers leurs choix politiques. Par exemple, les propriétaires immobiliers ou les ménages vivant seuls pourraient orienter leurs votes en fonction des politiques perçues comme avantageuses ou défavorables à leurs intérêts.
 
-### Modèle de l’étude
+## Modèle de l’étude
 
 Quel lien existe entre les différents facteurs socio-démographiques et influencent-ils les choix politiques des citoyens ?
 
-### Objectifs de l’étude
+## Objectifs de l’étude
 
 L’objectif est d'explorer ces hypothèses théoriques en s'appuyant sur des données socio-démographiques et électorales de plusieurs années. Cette étape théorique permet de poser les bases d’une analyse empirique qui pourra confirmer ou infirmer ces hypothèses en fonction des observations. Nous étudierons les liens au travers de différentes techniques d'analyse statistiques.
 
-### Livrable
+## Livrable
 
-L'application sous forme d'une carte interactive, ainsi que des diagrammes de notre étude, est accessible via l'URL : https://cyrildeschamps.fr
+L'application sous forme d'une carte interactive, ainsi que des diagrammes de notre étude, est accessible via l'URL : https://helyn.cyrildeschamps.fr
 
 ------------------------------------------------------------------------
 
-## Identification et récupération des données
+# Identification et récupération des données
 
-### Élections par bureau de vote
+## Élections par bureau de vote
 
 D’après le cadre théorique, la première étape consiste à collecter les résultats des élections présidentielles. Pour enrichir notre jeu de données, nous avons choisi de les détailler au niveau des bureaux de vote. La plateforme *data.gouv.fr* nous donne accès à ce type de données. Lors de chaque élection, environ 70 000 bureaux de vote partagent leurs résultats. Nous limiterons toutefois notre étude aux trois dernières élections présidentielles (2012, 2017 et 2022), ce qui sera largement suffisant pour répondre à notre problématique.
 
@@ -83,7 +93,7 @@ De plus, nous nous concentrerons uniquement sur les bureaux de vote situés en F
 
 Enfin, nous n'utiliserons que les données des premiers tours. Elles sont plus représentatives du choix de chacun, car non-influencé par l'obligation de voter pour le "moins pire".
 
-### Données socio-démographiques
+## Données socio-démographiques
 
 À partir du cadre théorique, nous avons identifié plusieurs groupes de facteurs socio-démographiques susceptibles d'influencer les orientations politiques des individus :
 
@@ -115,7 +125,7 @@ En revanche, la collecte des données concernant les revenus, le lieu de vie et 
 
 ------------------------------------------------------------------------
 
-## Nettoyage et fusion des données
+# Nettoyage et fusion des données
 
 Concernant le nettoyage des données, plusieurs étapes ont été nécessaires pour garantir la qualité et la cohérence des informations. Les données électorales et socio-démographiques ont été collectées auprès de différentes sources, nécessitant une harmonisation des formats et des variables.
 Nous avons d'abord sélectionné les colonnes pertinentes pour notre étude, en éliminant les doublons et les variables inutiles. Un travail de normalisation a été effectué pour uniformiser les noms des colonnes et faciliter les opérations de fusion et de jointure.
@@ -123,7 +133,7 @@ Les données ont été vérifiées afin d’éviter les valeurs aberrantes et ga
 
 Le point de centralisation des données finales est le **code bureau de vote**, un identifiant unique attribué à chaque bureau de vote.
 
-### Traitement des données électorales
+## Traitement des données électorales
 
 Pour les résultats des élections, il a d'abord été nécessaire de transformer la liste des votes par candidat dans chaque bureau de vote en catégories agrégées correspondant aux principaux courants politiques : Extrême Gauche, Gauche, Centre, Droite et Extrême Droite. Cette étape permet de simplifier l'analyse des tendances politiques tout en conservant une granularité suffisante.
 
@@ -139,11 +149,11 @@ library(readxl)
 library(gt)
 data <- read_excel("./cleanData/elections/resultats-burvot-t1-presidentielle_2022.xlsx")
 head(data, 3) %>%
-  gt()
+  kable(format = "latex", booktabs = TRUE)
 
 ```
 
-### Traitement des données socio-démographiques
+## Traitement des données socio-démographiques
 
 Concernant les facteurs socio-démographiques, certaines données étaient déjà disponibles au niveau des bureaux de vote, tandis que d’autres étaient regroupées au niveau communal. Ces dernières ont été réparties entre les bureaux de vote en suivant une répartition proportionnelle basée sur le nombre de votants, comme décrit précédemment. Les données ont ensuite été allégé et les colonnes renommés pour améliorer la lisibilité globale des données. Les colonnes inutiles ont été supprimé, pour éviter de garder des informations superflues.
 
@@ -160,12 +170,12 @@ data <- data %>%
   filter((voix_eg + voix_g + voix_c + voix_d + voix_ed) != 0)
 
 head(data, 3) %>% 
-  gt()
+  kable(format = "latex", booktabs = TRUE)
 ```
 
 ------------------------------------------------------------------------
 
-## Visualisation par la carte
+# Visualisation par la carte
 
 Après avoir fusionné toutes les données issues des élections présidentielles de 2012, 2017 et 2022, nous avons construit des cartes géographiques illustrant l'évolution de l'intention de vote des Français au fil du temps. Ces cartes mettent en évidence les changements significatifs dans les orientations politiques de l'électorat, avec une représentation des zones dominées par les votes à droite (teintes bleues) et à gauche (teintes rouges).
 
@@ -183,7 +193,7 @@ knitr::include_graphics(c("France-2012.png", "France-2017.png", "France-2022.png
 
 ------------------------------------------------------------------------
 
-## Data Mining Descriptif
+# Data Mining Descriptif
 
 L'analyse des données doit être la plus précise possible. Pour cela, nous avons choisi de créer un jeu de données intermédiaire qui élimine la duplication des bureaux de vote sur plusieurs années. Nous sélectionnerons aléatoirement une seule observation par bureau de vote parmi différentes années afin d’éviter un biais de similitude. En effet, un bureau ayant historiquement voté à droite a de fortes chances de continuer à voter de la même manière, ce qui pourrait fausser l’analyse si nous incluons plusieurs observations temporelles sans ajustement.
 
@@ -219,13 +229,13 @@ Cela indique que l’orientation politique française actuelle se situe plutôt 
 
 Notre objectif initial est d'explorer la corrélation entre le niveau de richesse et l'orientation politique. Les politiques de droite étant souvent perçues comme plus favorables aux personnes disposant de revenus élevés, il est raisonnable d’anticiper une corrélation positive entre un haut niveau de richesse et un soutien aux partis de droite.
 
-### Recherche de correlation globale
+## Recherche de corrélation globale
 
 Ensuite, nous avons cherché à analyser les corrélations entre nos données de vote et nos données socio-démographiques. Dans un premier temps, nous avons tenté de relier le nombre de votes aux autres variables. Cependant, nous nous sommes rapidement rendu compte que cette approche introduisait un biais : en utilisant le nombre de votes, nous observions systématiquement une corrélation avec les autres données. Cela s’explique par le fait que l’augmentation de la taille d’une commune entraîne mécaniquement une augmentation du nombre de ménages, d’habitants, et donc du nombre de votes.
 
 Nous avons donc décidé de passer à l’analyse des proportions de voix afin d’éliminer ce biais lié à la taille des communes. En utilisant les proportions de votes exprimées pour chaque catégorie, nous avons pu observer les corrélations entre ces proportions et nos données socio-démographiques. Certaines variables se sont révélées particulièrement significatives, comme la proportion d’employés (part_employé) et celle d’ouvriers (part_ouvrier), qui présentaient des relations notables avec les résultats des votes.
 
-```{r correlation-matrice, echo = FALSE, warning = FALSE, message = FALSE  }
+```{r corrélation-matrice, echo = FALSE, warning = FALSE, message = FALSE  }
 # Colonnes liées aux votes
 vote_cols <- c(
   "pourcentage_voix_votant_eg", "pourcentage_voix_votant_g", 
@@ -247,10 +257,10 @@ corr_vote_demo <- cor(df_vote, df_demo, use = "pairwise.complete.obs")
 
 # On la transforme en tableau
 corr_table <- as.data.frame(as.table(corr_vote_demo))
-colnames(corr_table) <- c("VarVote", "VarDemo", "Correlation")
+colnames(corr_table) <- c("VarVote", "VarDemo", "corrélation")
 
 # On trie selon la valeur absolue du coefficient
-corr_table_sorted <- corr_table[order(abs(corr_table$Correlation), decreasing = TRUE), ]
+corr_table_sorted <- corr_table[order(abs(corr_table$corrélation), decreasing = TRUE), ]
 
 # On affiche les 10 plus fortes corrélations
 head(corr_table_sorted, 10)
@@ -258,7 +268,7 @@ head(corr_table_sorted, 10)
 # Tri par variable démographique (group_by) 
 corr_table_sorted_by_demo <- corr_table %>%
   group_by(VarDemo) %>%
-  arrange(desc(abs(Correlation)), .by_group = TRUE)
+  arrange(desc(abs(corrélation)), .by_group = TRUE)
 
 # Affiche toutes les corrélations, triées à l'intérieur de chaque VarDemo
 corr_table_sorted_by_demo
@@ -267,7 +277,7 @@ Nous avons également entrepris une analyse ciblée des variables démographique
 
 À ce stade, nous nous sommes interrogés sur la possibilité de modéliser nos données en utilisant un simple modèle de régression linéaire. L’objectif était de déterminer si une telle approche pouvait capter les tendances observées et expliquer les variations des proportions de voix en fonction des différentes variables socio-démographiques.
 
-### Richesse
+## Richesse
 
 N'ayant pas de données sur le niveau de vie en 2012, nous ne séléctionnerons pas de datas sur cette année. Voici le dataset que nous utiliserons:
 
@@ -280,7 +290,7 @@ analys_data <- data %>%
   sample_frac(size = 1/7)
 
 head(analys_data, 3) %>% 
-  gt()
+  kable(format = "latex", booktabs = TRUE)
 ```
 
   
@@ -355,7 +365,7 @@ Nous cherchons une diagonale allant de l'angle inférieur gauche vers l'angle su
 
 En conclusion, la richesse permet simplement d'expliquer qu'un niveau de vie bas est associé à une probabilité plus élevée de vote pour les extrêmes.
 
-### Khi-2
+## Khi-2
 
 Nous avons ensuite tenté de réaliser des tests du Khi-2 afin d’examiner les relations entre nos données catégoriques et les proportions de votes. Pour cela, nous avons décidé de segmenter les données en quatre catégories, représentées par 4 colonnes et 4 lignes, pour simplifier l’analyse et réduire la complexité des relations à tester.
 
@@ -365,7 +375,7 @@ L’un des principaux problèmes rencontrés résidait dans la distribution dés
 
 À la lumière de ces difficultés, nous avons conclu que le test du Khi-2 n’était pas adapté à nos données dans leur état actuel. 
 
-### Impact du nombre d'individu
+## Impact du nombre d'individu
 
 Beaucoup de variable étant des quantités, il est intéressant de plutôt utiliser des proportions. Il faut également supprimer les colonnes inutiles car déjà représenté par d'autres (ex: Taux homme et Nb d'homme).
 
@@ -428,7 +438,7 @@ clean_data <- clean_data %>%
   select(-contains("population_ratio"), -contains("nb_25"), -contains("nb_25_64"), -contains("nb_65"), -contains("population_totale"), -contains("nb_h_total"), -contains("nb_f_total"), -contains("voix_eg"), -contains("voix_g"), -contains("voix_c"), -contains("voix_d"), -contains("voix_ed"), -contains("code_insee"), -contains("libelle"))
 ```
 
-### Recherche globale par visualisation poussée
+## Recherche globale par visualisation poussée
 
 Comme évoqué précédemment, il est pertinent de visualiser notre score en fonction de nos différentes variables explicatives. Nous allons donc les tester rapidement et observer les tendances qui en ressortent.
 
@@ -483,14 +493,19 @@ ggsave("barplot_matrix.png", plot = p, width = 15, height = 8, dpi = 300)
 
 ![](barplot_matrix.png)  
 
-Cette matrice de graphiques de dispersion offre un bon aperçu des facteurs qui méritent d'être approfondies. On repère rapidement que le nombre de ménage propriétaire pousse un vote vers la droite. On voit aussi qu'un plus haut niveau d'étude pousse à voter à gauche.
+Cette matrice de graphiques met en évidence les relations complexes entre diverses caractéristiques socio-démographiques et les choix électoraux. Un premier constat notable est que la proportion de ménages propriétaires tend à être un indicateur clé d'un vote orienté vers la droite. Cette observation s'explique probablement par une volonté de préserver un certain cadre fiscal et des politiques favorisant le patrimoine immobilier. À l'inverse, le niveau d’études apparaît comme un facteur corrélé à un vote en faveur des partis de gauche.
+
+Les catégories socio-professionnelles montrent également des tendances intéressantes. Les ouvriers et employés semblent privilégier des partis plus populaires, souvent porteurs de mesures sociales fortes. Les cadres et professions intermédiaires affichent une propension plus marquée pour des votes modérés ou progressistes, reflétant probablement des préoccupations liées à la stabilité économique.
+
+La structure familiale influence également les comportements électoraux. Les ménages monoparentaux apparaissent légèrement plus enclins à voter pour des partis de gauche, sans doute en raison de politiques davantage orientées vers le soutien familial. Par ailleurs, les zones où les ménages sont majoritairement composés de couples sans enfants montrent des tendances plus diverses, probablement influencées par d'autres facteurs comme le revenu et le cadre de vie.
+
+L’âge des populations étudiées révèle également de légères tendances. Les tranches d’âge les plus élevées tendent à privilégier des votes conservateurs, peut-être en raison d’une volonté de stabilité face aux changements sociétaux. À l’inverse, les jeunes adultes semblent davantage orientés vers des partis écologistes ou progressistes, reflétant une sensibilité accrue aux enjeux environnementaux et aux politiques de justice sociale.
 
 ------------------------------------------------------------------------  
 
-## Recherche de corrélations poussées
+# Recherche de corrélations poussées
 
-
-### Regression liénaire
+## Régression linéaire
 
 Le script est accessible en annexe.  
 
@@ -565,13 +580,13 @@ En outre, l’analyse visuelle des données a révélé une limitation suppléme
 
 Face à ces constats, nous avons conclu que la régression linéaire simple, bien qu’utile pour une première exploration, était insuffisante pour modéliser les liens complexes entre les variables socio-démographiques et les proportions de votes. Ces résultats ont souligné la nécessité d’envisager des approches plus avancées, telles que les régressions polynomiales, les modèles non linéaires ou encore des algorithmes d’apprentissage automatique, pour capturer des relations plus subtiles et non linéaires présentes dans les données.
 
-### Régression multiple
+## Régression multiple
 
 En ce qui concerne la régression multiple, nous avons consacré un certain temps pour tester différentes combinaisons de variables afin de trouver des modèles offrant des résultats satisfaisants. Nous avons exploré plusieurs approches, notamment les sélections backward et forward, en essayant différentes configurations et en ajustant les paramètres. Malgré nos efforts, les résultats obtenus n’ont pas été convaincants : aucun modèle ne semblait réellement capable de capturer de manière significative les liens complexes entre les variables démographiques et les proportions de votes.  
 
-### Random forest
+## Random forest
 
-#### Entrainement 
+### Entraînement 
 
 Le choix du modèle s'est orienté vers une random forest pour sa capacité à modéliser des interactions complexes entre les variables explicatives. L'implémentation ranger a été retenue en raison de ses performances optimisées, tant en termes de rapidité d'entraînement que de gestion de grandes quantités de données. L'objectif est de détecter des corrélations non linéaires qui pourraient influencer le vote de manière subtile et difficilement perceptible avec des modèles plus simples. Cette approche permet d'obtenir un bon équilibre entre le temps de calcul, la robustesse des prédictions et l'interprétabilité des résultats. Le script détaillé, incluant les paramètres d'entraînement et les étapes de prétraitement, est disponible en annexe pour une analyse complète et reproductible.  
 
@@ -873,14 +888,55 @@ Les autres variables sont un peu plus inattendues et nous n'avons pas trouvé de
 
 ------------------------------------------------------------------------
 
-## Synthèse
+# Synthèse
 
+À travers cette étude, nous avons démontré que les résultats électoraux d’un bureau de vote peuvent être influencés par une multitude de variables socio-démographiques, notamment la catégorie socioprofessionnelle, le niveau d’éducation, les conditions de vie et les caractéristiques géographiques. Les corrélations observées, bien que significatives, soulignent la complexité de ces interactions, et mettent en évidence qu’aucun facteur isolé ne permet d’expliquer pleinement les orientations politiques. Les modèles utilisés, notamment la régression multiple et la forêt aléatoire (Random Forest), ont révélé la nécessité de considérer ces facteurs comme un ensemble interconnecté.
+
+## Résultats principaux
+
+- **Les proportions de voix exprimées pour les extrêmes (gauche et droite)** augmentent à mesure que le niveau de vie diminue, reflétant une tendance à voter pour des partis plus radicaux dans des contextes de précarité.  
+- **À l’inverse, des niveaux de vie élevés** favorisent un vote davantage centré.
+
+## Profils types
+
+- **Extrême gauche :**
+  - Jeunes (moins de 25 ans), employés ou ouvriers.
+  - Résidant dans des maisons, avec un niveau de vie modéré à élevé.
+
+- **Gauche :**
+  - Facteurs similaires à l’extrême gauche.
+  - Niveau d’éducation intermédiaire (CAP, BEP), résidents de zones rurales ou de petites communes.
+
+- **Centre :** Résultats moins distincts, reflétant une orientation modérée et des caractéristiques socio-démographiques diversifiées.
+
+- **Droite et extrême droite :**
+  - Population plus âgée, souvent propriétaire, résidant dans des maisons individuelles.
+  - Corrélation avec des niveaux d’éducation plus élevés et des surfaces de logement importantes.
+
+## Modélisation
+
+- **Régressions linéaires simples et multiples :** Les résultats sont mitigés, notamment à cause de la distribution resserrée des données autour de moyennes. Ces modèles se révèlent insuffisants pour capter les interactions complexes.
+- **Forêt aléatoire :** R² ajusté de 0.6196, confirmant une capacité notable à expliquer les comportements électoraux, bien que 40 % de la variabilité reste inexpliquée.
+
+## Limites et biais
+
+- **Biais des données :** Les données collectées ne couvrent pas toutes les dimensions possibles (ex. : absence de données individuelles, limitations géographiques).
+- **Complexité des interactions :** Bien que la forêt aléatoire soit performante, elle reste limitée pour identifier des causalités directes.
+- **Effet contextuel :** Certaines tendances locales ou régionales ne sont pas complètement expliquées par les variables utilisées.
+
+## Conclusion
+
+Cette étude met en lumière la complexité des comportements électoraux en France. Bien que des corrélations significatives aient été établies entre certaines variables socio-démographiques et les tendances de vote, elles ne permettent pas de prédire entièrement les résultats d’un bureau de vote. Les comportements électoraux sont influencés par des facteurs multiples, interconnectés et parfois contextuels.
+
+## Pour aller plus loin
+
+Des modèles plus sophistiqués, intégrant des données qualitatives et des dynamiques temporelles, pourraient fournir une vision encore plus fine de ces interactions. Cela pourrait également ouvrir la voie à des applications pratiques, telles que l’analyse prédictive ou l’optimisation des stratégies électorales.
 
 ------------------------------------------------------------------------
 
-## Annexe
+# Annexe
 
-### Script de régression linéaire et résultat
+## Script de régression linéaire et résultat
 ```{r eval=FALSE}
 # Fonction pour générer un graphique avec p-values et R-squared
 generate_plot <- function(data, x_var, y_var, x_label, y_label, title) {
@@ -945,7 +1001,7 @@ for (p in plots) print(p)
 ```
 
 
-### Script d'entrainement random forest (via ranger, sur plusieurs coeurs) 
+## Script d'Entraînement random forest (via ranger, sur plusieurs coeurs) 
 ```{r eval=FALSE}
 # Préparation des données
 df_model <- clean_data %>%
@@ -1001,7 +1057,7 @@ stopCluster(cl)
 saveRDS(rf_model, file = "big_score_model.rds")
 ```
 
-### Script de merge spatiale (simplifié)
+## Script de merge spatiale (simplifié)
 
 ```{r eval=FALSE}
 # Rendre les géométries valides avant l'intersection
@@ -1029,7 +1085,7 @@ resultats_final$geom <- bureau_vote_data$geom[match(resultats_final$codebureauvo
 resultats_final <- st_as_sf(resultats_final, crs = 2154)
 ```
 
-### Code initialisation carte React avec MapLibre
+## Code initialisation carte React avec MapLibre
 ```ts
 // Initialisation de la carte
 const map = new maplibregl.Map({
