@@ -1,32 +1,22 @@
 ---
 title: "Helyn - Étude statistiques"
 subtitle: "Prédire les résultats des élections présidentielles françaises d'un bureau de vote"
-author: "D'après Cyril Deschamps, Etienne Ducros, Hugo Brun et Lennon Herrmann"
-website: https://helyn.cyrildeschamps.fr
+author: "D'après Cyril Deschamps, Etienne Ducros, Hugo Brun et Lennon Herrmann / [Site du projet](https://helyn.cyrildeschamps.fr)"
 date: "`r Sys.Date()`"
 output:
   html_document:
-    toc: true           # Ajoute une table des matières
-    toc_depth: 3        # Définit la profondeur de la table des matières
-    number_sections: true  # Numérote les sections du rapport
-    fig_caption: true   # Ajoute des légendes aux figures
-  pdf_document: default  # Si un PDF est souhaité
+    toc: true
+    toc_depth: 3
+    number_sections: true
+    fig_caption: true
+
 ---
 
 <style>
 body {text-align: justify}
 </style>
 
-<style>
-body {text-align: justify}
-</style>
-
 ------------------------------------------------------------------------
-
-> **TODO** :\
-> - Vérifier qu'il n'y a plus de TODO dans le fichier.\
-> - Ajouter des images, diagrammes et extraits de code.\
-> - Ajouter des échantillons de données pour expliciter chaque étape.
 
 ```{r echo = FALSE, warning = FALSE,  message = FALSE, include=FALSE, results = 'hide'}
 library(readr)
@@ -76,6 +66,10 @@ Quel lien existe entre les différents facteurs socio-démographiques et influen
 ### Objectifs de l’étude
 
 L’objectif est d'explorer ces hypothèses théoriques en s'appuyant sur des données socio-démographiques et électorales de plusieurs années. Cette étape théorique permet de poser les bases d’une analyse empirique qui pourra confirmer ou infirmer ces hypothèses en fonction des observations. Nous étudierons les liens au travers de différentes techniques d'analyse statistiques.
+
+### Livrable
+
+L'application sous forme d'une carte interactive, ainsi que des diagrammes de notre étude, est accessible via l'URL : https://cyrildeschamps.fr
 
 ------------------------------------------------------------------------
 
@@ -153,7 +147,7 @@ head(data, 3) %>%
 
 Concernant les facteurs socio-démographiques, certaines données étaient déjà disponibles au niveau des bureaux de vote, tandis que d’autres étaient regroupées au niveau communal. Ces dernières ont été réparties entre les bureaux de vote en suivant une répartition proportionnelle basée sur le nombre de votants, comme décrit précédemment. Les données ont ensuite été allégé et les colonnes renommés pour améliorer la lisibilité globale des données. Les colonnes inutiles ont été supprimé, pour éviter de garder des informations superflues.
 
-Afin de préparer la visualisation de nos données sur des cartes, nous avons conservé un fichier spatial au format GeoJSON contenant les contours des bureaux de vote, identifiés par l'ID code_bureau_vote. Ce fichier, d'une taille de 600 Mo, a été isolé pour éviter de ralentir le traitement des données lors des analyses statistiques. En cas de besoin, il peut être facilement fusionné avec notre jeu de données pour générer des visualisations cartographiques.
+Afin de préparer la visualisation de nos données sur des cartes, nous avons conservé un fichier spatial au format GeoJSON contenant les contours des bureaux de vote, identifiés par l'ID code_bureau_vote. Ce fichier, d'une taille de 600 Mo, a été isolé pour éviter de ralentir le traitement des données lors des analyses statistiques. En cas de besoin, il peut être facilement fusionné avec notre jeu de données pour générer des visualisations cartographiques. Le script est accessible en annexe.
 
 Ces étapes ont permis de disposer d’un jeu de données homogène et prêt pour l'analyse statistique des corrélations entre les variables socio-démographiques et les résultats électoraux. Voici un échantillon des 72 colonnes finales :
 
@@ -333,7 +327,7 @@ p1 + plot_spacer() + p2 +
   plot_layout(widths = c(1, 0.1, 1)) & theme(plot.margin = margin(10, 10, 10, 10))
 ```
 
-On constate qu'effectivement le niveau de vie semble impacter le pourcentage de voix d'extrême gauche mais n'explique pas tout. Pour ce qui est de l'extrème droite, on observe une grande répartition donc le niveau de vie ne semble pas un facteur premier. Mais il y a tout de même cette tendance, ce qui laisse penser que la pauvreté pousse à voté dans les extrêmes.
+On constate qu'effectivement le niveau de vie semble impacter le pourcentage de voix d'extrême gauche mais n'explique pas tout. Pour ce qui est de l’extrême droite, on observe une grande répartition donc le niveau de vie ne semble pas un facteur premier. Mais il y a tout de même cette tendance, ce qui laisse penser que la pauvreté pousse a voter dans les extrêmes.
 
 Comparons maintenant avec notre score :
 
@@ -498,6 +492,8 @@ Cette matrice de graphiques de dispersion offre un bon aperçu des facteurs qui 
 
 ### Regression liénaire
 
+Le script est accessible en annexe.  
+
 ```{r all-regressions, echo = FALSE, warning = FALSE, message = FALSE}
 # Fonction pour générer un graphique avec p-values et R-squared
 generate_plot <- function(data, x_var, y_var, x_label, y_label, title) {
@@ -577,7 +573,9 @@ En ce qui concerne la régression multiple, nous avons consacré un certain temp
 
 #### Entrainement 
 
-Le choix du modèle s'est orienté vers une random forest pour sa capacité à modéliser des interactions complexes entre les variables explicatives. L'implémentation ranger a été retenue en raison de ses performances optimisées, tant en termes de rapidité d'entraînement que de gestion de grandes quantités de données. L'objectif est de détecter des corrélations non linéaires qui pourraient influencer le vote de manière subtile et difficilement perceptible avec des modèles plus simples. Cette approche permet d'obtenir un bon équilibre entre le temps de calcul, la robustesse des prédictions et l'interprétabilité des résultats. Le script détaillé, incluant les paramètres d'entraînement et les étapes de prétraitement, est disponible en annexe pour une analyse complète et reproductible.
+Le choix du modèle s'est orienté vers une random forest pour sa capacité à modéliser des interactions complexes entre les variables explicatives. L'implémentation ranger a été retenue en raison de ses performances optimisées, tant en termes de rapidité d'entraînement que de gestion de grandes quantités de données. L'objectif est de détecter des corrélations non linéaires qui pourraient influencer le vote de manière subtile et difficilement perceptible avec des modèles plus simples. Cette approche permet d'obtenir un bon équilibre entre le temps de calcul, la robustesse des prédictions et l'interprétabilité des résultats. Le script détaillé, incluant les paramètres d'entraînement et les étapes de prétraitement, est disponible en annexe pour une analyse complète et reproductible.  
+
+Le script est accessible en annexe.  
 
 ```{r eval=FALSE, echo = FALSE, warning = FALSE, message = FALSE}
 # Préparation des données
@@ -882,4 +880,263 @@ Les autres variables sont un peu plus inattendues et nous n'avons pas trouvé de
 
 ## Annexe
 
+### Script de régression linéaire et résultat
+```{r eval=FALSE}
+# Fonction pour générer un graphique avec p-values et R-squared
+generate_plot <- function(data, x_var, y_var, x_label, y_label, title) {
+  # Modèle de régression
+  model <- lm(as.formula(paste0(y_var, " ~ ", x_var)), data = data)
+  model_summary <- summary(model)
+  
+  # Extraction des p-values, R-squared
+  coef_pvalue <- signif(model_summary$coefficients[2, 4], 5) # P-value du coefficient
+  fstat_pvalue <- signif(pf(
+    model_summary$fstatistic[1],
+    model_summary$fstatistic[2],
+    model_summary$fstatistic[3],
+    lower.tail = FALSE
+  ), 5) # P-value de la F-statistic
+  r_squared <- signif(model_summary$r.squared, 5) # R-squared
+  
+  # Génération du graphique
+  ggplot(data, aes_string(x = x_var, y = y_var)) +
+    geom_point() +
+    geom_smooth(method = "lm", se = FALSE, color = "red") +
+    labs(
+      title = title,
+      x = x_label,
+      y = y_label
+    ) +
+    annotate(
+      "text",
+      x = max(data[[x_var]], na.rm = TRUE) * 0.8,
+      y = max(data[[y_var]], na.rm = TRUE) * 0.8,
+      label = paste0(
+        "R² = ", r_squared,
+        "\nP-val Coeff = ", coef_pvalue,
+        "\nP-val F-Stat = ", fstat_pvalue
+      ),
+      hjust = 0,
+      size = 4,
+      color = "blue"
+    )
+}
 
+# Liste des régressions à effectuer
+regressions <- list(
+  list(x = "part_employes", y = "pourcentage_voix_votant_eg", x_label = "Part des employés", y_label = "% Voix EG", title = "Régression linéaire : EG ~ part_employes"),
+  list(x = "part_employes", y = "pourcentage_voix_votant_c", x_label = "Part des employés", y_label = "% Voix C", title = "Régression linéaire : C ~ part_employes")
+  )
+
+# Générer et afficher les graphiques
+plots <- lapply(regressions, function(reg) {
+  generate_plot(
+    data = data,
+    x_var = reg$x,
+    y_var = reg$y,
+    x_label = reg$x_label,
+    y_label = reg$y_label,
+    title = reg$title
+  )
+})
+
+# Afficher les graphiques
+for (p in plots) print(p)
+```
+
+
+### Script d'entrainement random forest (via ranger, sur plusieurs coeurs) 
+```{r eval=FALSE}
+# Préparation des données
+df_model <- clean_data %>%
+  group_by(code_bureau_vote) %>%
+  slice_sample(n = 1) %>%
+  ungroup() %>%
+  select(where(is.numeric)) %>%
+  select(-contains("voix")) %>%
+  filter(!is.na(score_orientation))
+
+write.csv(df_model, file = "big_score_training_data.csv", row.names = FALSE)
+
+nzv <- nearZeroVar(df_model, saveMetrics = TRUE)
+df_model <- df_model[, !nzv$nzv]
+
+preProcValues <- preProcess(df_model, method = "medianImpute")
+df_model <- predict(preProcValues, df_model)
+
+num_cores <- parallel::detectCores() - 1
+cl <- makeCluster(num_cores)
+registerDoParallel(cl)
+
+train_ctrl <- trainControl(
+  method        = "repeatedcv",
+  number        = 5,
+  repeats       = 3,
+  verboseIter   = FALSE,
+  allowParallel = TRUE
+)
+
+tune_grid <- expand.grid(
+ mtry          = c(2, 4, 6, 8),
+ splitrule     = c("variance", "extratrees"),
+ min.node.size = c(5, 10, 15)
+)
+
+df_model <- as.data.frame(df_model)
+X <- df_model[, setdiff(names(df_model), "score_orientation")]
+Y <- df_model$score_orientation
+
+set.seed(123)
+rf_model <- train(
+ x          = X,
+ y          = Y,
+ method     = "ranger",
+ trControl  = train_ctrl,
+ tuneGrid   = tune_grid,
+ num.trees  = 500,
+ importance = "impurity"
+)
+
+stopCluster(cl)
+saveRDS(rf_model, file = "big_score_model.rds")
+```
+
+### Script de merge spatiale (simplifié)
+
+```{r eval=FALSE}
+# Rendre les géométries valides avant l'intersection
+bureau_vote_data <- st_make_valid(bureau_vote_data)
+revenu_data <- st_make_valid(revenu_data)
+
+# Intersection géographique entre les carreaux de 200m et les bureaux de vote
+intersections <- st_intersection(revenu_data, bureau_vote_data)
+
+# Calcul des aires et des proportions, run plusieurs heures (preparation MERGE)
+intersections$area_intersection <- st_area(intersections)
+intersections$area_carre <- st_area(revenu_data[match(intersections$id, revenu_data$id), ])
+intersections$proportion <- as.numeric(intersections$area_intersection / intersections$area_carre)
+
+# Calcul des indicateurs pondérés par les proportions d'intersection
+resultats_final <- intersections[, .(
+  nb_menages = round(sum(men * proportion, na.rm = TRUE), 3),
+  nb_menages_pauvres = round(sum(men_pauv * proportion, na.rm = TRUE), 3),
+  nb_logements_maisons = round(sum(men_mais * proportion, na.rm = TRUE), 3),
+  niveau_vie_total = round(sum(ind_snv * proportion, na.rm = TRUE), 3)
+), by = codebureauvote]
+
+# Ajout de la géométrie correspondante au bureau de vote
+resultats_final$geom <- bureau_vote_data$geom[match(resultats_final$codebureauvote, bureau_vote_data$codebureauvote)]
+resultats_final <- st_as_sf(resultats_final, crs = 2154)
+```
+
+### Code initialisation carte React avec MapLibre
+```ts
+// Initialisation de la carte
+const map = new maplibregl.Map({
+  container: mapContainerRef.current,
+  style: {
+    version: 8,
+    sources: {
+      "osm-tiles": {
+        type: "raster",
+        tiles: [
+          "https://a.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png",
+          "https://b.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png",
+          "https://c.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png",
+        ],
+        tileSize: 256,
+      },
+      // On ajuste ici la source de la couche vectorielle en fonction de l'année
+      political_map: {
+        type: "vector",
+        tiles: [
+          `${tilesHostBaseURL}/data/${politicalMapSourceName}/{z}/{x}/{y}.pbf`,
+        ],
+      },
+      "osm-tiles-labels": {
+        type: "raster",
+        tiles: [
+          "https://a.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}.png",
+          "https://b.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}.png",
+          "https://c.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}.png",
+        ],
+        tileSize: 256,
+      },
+    },
+    layers: [
+      {
+        id: "osm-background",
+        type: "raster",
+        source: "osm-tiles",
+      },
+      {
+        id: "political_map",
+        type: "line",
+        source: "political_map",
+        "source-layer": "political_map",
+        paint: {
+          "line-color": "#e3cfd0",
+          "line-width": [
+            "interpolate",
+            ["exponential", 1.5],
+            ["zoom"],
+            0,
+            0.1,
+            10,
+            3,
+          ],
+        },
+      },
+      {
+        id: "political_map_fill",
+        type: "fill",
+        source: "political_map",
+        "source-layer": "political_map",
+        paint: {
+          "fill-color": [
+            "interpolate",
+            ["linear"],
+            ["get", "score_orientation"],
+            0,
+            "#313695",
+            0.25,
+            "#4575b4",
+            0.5,
+            "#fdae61",
+            0.75,
+            "#d73027",
+            1,
+            "#a50026",
+          ],
+          "fill-opacity": 0.7,
+          "fill-outline-color": [
+            "interpolate",
+            ["linear"],
+            ["get", "score_orientation"],
+            0,
+            "#313695B3",
+            0.25,
+            "#4575b4B3",
+            0.5,
+            "#fdae61B3",
+            0.75,
+            "#d73027B3",
+            1,
+            "#a50026B3",
+          ],
+          "fill-antialias": true,
+        },
+      },
+      {
+        id: "osm-labels",
+        type: "raster",
+        source: "osm-tiles-labels",
+      },
+    ],
+  },
+  center: [2.2137, 46.2276],
+  zoom: 5,
+  maxZoom: 13,
+  minZoom: 5,
+});
+```
