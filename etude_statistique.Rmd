@@ -854,18 +854,24 @@ knitr::include_graphics("profil_type_centre.png")
 
 
 ```{r echo=FALSE, out.width = "500px"}
-knitr::include_graphics("profil_type_droite.png")
-```
-
-> **INTERPRETER**  
->  
-
-```{r echo=FALSE, out.width = "500px"}
 knitr::include_graphics("profil_type_extreme_droite.png")
 ```
 
-> **INTERPRETER**  
->  
+On remarque qu'il y a 5 variables majeures qui expliquent un vote à l'extreme droite. Par exemple, lorsque la proportion de logements individuels augmente dans une ville, celle-ci aura tendance a voter plus à l'extreme droite. De même pour pour la surface moyenne des habitations. Les personnes vivant dans des maisons individuelles valorisent souvent la stabilité, la sécurité et les traditions, ce qui peut les rendre plus réceptives aux discours conservateurs (la préservation des valeurs "traditionnelles") et nationalistes de l'extrême droite.
+C'est l'un des résultats qui confirme une hypothèse nous avions initialement formée.
+
+On remarque aussi que cette intention de vote est présente chez les personnes ayant un CAP ou BEP. On l'expliquerait intuitivement par le fait que les détenteurs de CAP ou BEP occupent souvent des emplois manuels ou techniques, qui peuvent être vulnérables face à la délocalisation, l'automatisation ou la concurrence étrangère.Les partis d'extrême droite adoptant un discours protectionniste (problème de l'immigration) ce qui peut convaincre cette catégorie en promettant une sauvegarde de leurs emplois.
+
+```{r echo=FALSE, out.width = "500px"}
+knitr::include_graphics("profil_type_droite.png")
+```
+
+Sur les variables qui influent le vote à droite, on en repère deux plutot interessantes : la proportion d'employés et la part de Bac+3 ou Bac+4. Les employés, appartenant à des catégories modestes, peuvent être sensibles aux politiques économiques de droite, qui mettent souvent en avant des réformes favorisant l'emploi, la compétitivité des entreprises et une fiscalité plutot modérée. La droite traditionnelle peut être perçue comme offrant un équilibre entre la valorisation du travail et la stabilité économique, sans les excès perçus de l'extrême droite ou des politiques redistributives plus marquées de la gauche.
+Les Bac+3 ou Bac+4 peuvent avoir une position relativement confortable et privilégier des politiques qui protègent leurs acquis économiques et sociaux, sans forcement soutenir les discours plus extrêmes. Ils souvent issus de la classe moyenne, et peuvent rechercher des politiques stables et modérées, ce que la droite traditionnelle incarne.
+
+On retrouve aussi les variable désignant les logements individuels et leur surface, qui, comme pour l'extreme droite, peuvent très bien expliquer un vote à droite.
+Les autres variables sont un peu plus inattendues et nous n'avons pas trouvé de lien logique. Cela peut etre un facteur qui ne s'explique pas ou être un biais
+
 
 ------------------------------------------------------------------------
 
